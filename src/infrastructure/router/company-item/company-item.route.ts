@@ -3,6 +3,7 @@ import { SequelizeCompanyItemRepository } from "../../repository/company-item/se
 import { CompanyItemUseCase } from "../../../application/company-item/company-item-use-case";
 import { CompanyItemController } from "../../controller/company-item/company-item.controller";
 import { authMiddleware } from "../../middlewares/auth.middleware";
+import { tenantMiddleware } from "../../middlewares/tenant.middleware";
 import SocketAdapter from "../../services/socketAdapter";
 
 function configureCompanyItemRoutes(app: Express, socketAdapter?: SocketAdapter) {
@@ -21,7 +22,7 @@ function configureCompanyItemRoutes(app: Express, socketAdapter?: SocketAdapter)
      *     security:
      *       - bearerAuth: []
      */
-    app.get(`/${basePrefix}/company-items/:cmp_uuid/:filter?/:page?/:perPage?`, authMiddleware, companyItemCtrl.getAllCtrl);
+    app.get(`/${basePrefix}/company-items/:cmp_uuid/:filter?/:page?/:perPage?`, authMiddleware, tenantMiddleware, companyItemCtrl.getAllCtrl);
 
     /**
      * @swagger
@@ -32,7 +33,7 @@ function configureCompanyItemRoutes(app: Express, socketAdapter?: SocketAdapter)
      *     security:
      *       - bearerAuth: []
      */
-    app.get(`/${basePrefix}/company-item/:cmp_uuid/:itm_uuid/:cmpitm_uuid`, authMiddleware, companyItemCtrl.getCtrl);
+    app.get(`/${basePrefix}/company-item/:cmp_uuid/:itm_uuid/:cmpitm_uuid`, authMiddleware, tenantMiddleware, companyItemCtrl.getCtrl);
 
     /**
      * @swagger
@@ -43,7 +44,7 @@ function configureCompanyItemRoutes(app: Express, socketAdapter?: SocketAdapter)
      *     security:
      *       - bearerAuth: []
      */
-    app.post(`/${basePrefix}/company-item`, authMiddleware, companyItemCtrl.insertCtrl);
+    app.post(`/${basePrefix}/company-item`, authMiddleware, tenantMiddleware, companyItemCtrl.insertCtrl);
 
     /**
      * @swagger
@@ -54,7 +55,7 @@ function configureCompanyItemRoutes(app: Express, socketAdapter?: SocketAdapter)
      *     security:
      *       - bearerAuth: []
      */
-    app.put(`/${basePrefix}/company-item/:cmp_uuid/:itm_uuid/:cmpitm_uuid`, authMiddleware, companyItemCtrl.updateCtrl);
+    app.put(`/${basePrefix}/company-item/:cmp_uuid/:itm_uuid/:cmpitm_uuid`, authMiddleware, tenantMiddleware, companyItemCtrl.updateCtrl);
 
     /**
      * @swagger
@@ -65,7 +66,7 @@ function configureCompanyItemRoutes(app: Express, socketAdapter?: SocketAdapter)
      *     security:
      *       - bearerAuth: []
      */
-    app.delete(`/${basePrefix}/company-item/:cmp_uuid/:itm_uuid/:cmpitm_uuid`, authMiddleware, companyItemCtrl.deleteCtrl);
+    app.delete(`/${basePrefix}/company-item/:cmp_uuid/:itm_uuid/:cmpitm_uuid`, authMiddleware, tenantMiddleware, companyItemCtrl.deleteCtrl);
 }
 
 export default configureCompanyItemRoutes;
