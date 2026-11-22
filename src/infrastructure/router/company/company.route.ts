@@ -4,6 +4,7 @@ import { CompanyUseCase } from "../../../application/company/company-use-case";
 import { CompanyController } from "../../controller/company/company.controller";
 import SocketAdapter from "../../services/socketAdapter";
 import { authMiddleware } from "../../middlewares/auth.middleware";
+import { tenantMiddleware } from "../../middlewares/tenant.middleware";
 
 function configureCompanyRoutes(app: Express, socketAdapter?: SocketAdapter) {
     const sequelizeCompanyRepository = new SequelizeCompanyRepository();
@@ -34,7 +35,7 @@ function configureCompanyRoutes(app: Express, socketAdapter?: SocketAdapter) {
      *     security:
      *       - bearerAuth: []
      */
-    app.get(`/${basePrefix}/company/:cmp_uuid`, authMiddleware, companyCtrl.getCtrl);
+    app.get(`/${basePrefix}/company/:cmp_uuid`, authMiddleware, tenantMiddleware, companyCtrl.getCtrl);
 
     /**
      * @swagger
@@ -58,7 +59,7 @@ function configureCompanyRoutes(app: Express, socketAdapter?: SocketAdapter) {
      *     security:
      *       - bearerAuth: []
      */
-    app.put(`/${basePrefix}/company/:cmp_uuid`, authMiddleware, companyCtrl.updateCtrl);
+    app.put(`/${basePrefix}/company/:cmp_uuid`, authMiddleware, tenantMiddleware, companyCtrl.updateCtrl);
 
     /**
      * @swagger
@@ -70,7 +71,7 @@ function configureCompanyRoutes(app: Express, socketAdapter?: SocketAdapter) {
      *     security:
      *       - bearerAuth: []
      */
-    app.delete(`/${basePrefix}/company/:cmp_uuid`, authMiddleware, companyCtrl.deleteCtrl);
+    app.delete(`/${basePrefix}/company/:cmp_uuid`, authMiddleware, tenantMiddleware, companyCtrl.deleteCtrl);
 }
 
 export default configureCompanyRoutes;
