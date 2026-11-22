@@ -3,6 +3,7 @@ import { CompanyMenuUseCase } from "../../../application/company-menu/company-me
 import { SequelizeCompanyMenuRepository } from "../../repository/company-menu/sequelize-company-menu.repository";
 import { CompanyMenuController } from "../../controller/company-menu/company-menu.controller";
 import { authMiddleware } from "../../middlewares/auth.middleware";
+import { tenantMiddleware } from "../../middlewares/tenant.middleware";
 import SocketAdapter from "../../services/socketAdapter";
 
 function configureCompanyMenuRoutes(app: Express, socketAdapter?: SocketAdapter) {
@@ -21,7 +22,7 @@ function configureCompanyMenuRoutes(app: Express, socketAdapter?: SocketAdapter)
      *     security:
      *       - bearerAuth: []
      */
-    app.post(`/${basePrefix}/company-menu`, authMiddleware, controller.insertCtrl);
+    app.post(`/${basePrefix}/company-menu`, authMiddleware, tenantMiddleware, controller.insertCtrl);
 
     /**
      * @swagger
@@ -32,7 +33,7 @@ function configureCompanyMenuRoutes(app: Express, socketAdapter?: SocketAdapter)
      *     security:
      *       - bearerAuth: []
      */
-    app.put(`/${basePrefix}/company-menu/:cmpmnu_uuid`, authMiddleware, controller.updateCtrl);
+    app.put(`/${basePrefix}/company-menu/:cmpmnu_uuid`, authMiddleware, tenantMiddleware, controller.updateCtrl);
 
     /**
      * @swagger
@@ -43,7 +44,7 @@ function configureCompanyMenuRoutes(app: Express, socketAdapter?: SocketAdapter)
      *     security:
      *       - bearerAuth: []
      */
-    app.delete(`/${basePrefix}/company-menu/:cmpmnu_uuid`, authMiddleware, controller.deleteCtrl);
+    app.delete(`/${basePrefix}/company-menu/:cmpmnu_uuid`, authMiddleware, tenantMiddleware, controller.deleteCtrl);
 
     /**
      * @swagger
@@ -54,7 +55,7 @@ function configureCompanyMenuRoutes(app: Express, socketAdapter?: SocketAdapter)
      *     security:
      *       - bearerAuth: []
      */
-    app.get(`/${basePrefix}/company-menu/:cmp_uuid`, authMiddleware, controller.getOverridesCtrl);
+    app.get(`/${basePrefix}/company-menu/:cmp_uuid`, authMiddleware, tenantMiddleware, controller.getOverridesCtrl);
 }
 
 export default configureCompanyMenuRoutes;
