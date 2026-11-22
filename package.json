@@ -1,11 +1,15 @@
 {
-  "name": "api-node-typescript-ddd",
+  "name": "api-ats-supply-clean-architecture",
   "version": "1.0.0",
-  "description": "Template API NodeJS con Typescript y Clean Architecture",
+  "description": "API Backend de ATS Supply con Clean Architecture, TypeScript y Sequelize",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev:ddd": "nodemon ./src/app.ts"
+    "dev": "nodemon ./src/app.ts",
+    "dev:ddd": "nodemon ./src/app.ts",
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint:typecheck": "tsc --noEmit --skipLibCheck true"
   },
   "repository": {
     "type": "git",
