@@ -4,6 +4,7 @@ import { CompanySettingUseCase } from "../../../application/company-setting/comp
 import { CompanySettingController } from "../../controller/company-setting/company-setting.controller";
 import SocketAdapter from "../../services/socketAdapter";
 import { authMiddleware } from "../../middlewares/auth.middleware";
+import { tenantMiddleware } from "../../middlewares/tenant.middleware";
 
 function configureCompanySettingRoutes(app: Express, socketAdapter?: SocketAdapter) {
     const sequelizeCompanySettingRepository = new SequelizeCompanySettingRepository();
@@ -22,7 +23,7 @@ function configureCompanySettingRoutes(app: Express, socketAdapter?: SocketAdapt
      *     security:
      *       - bearerAuth: []
      */
-    app.get(`/${basePrefix}/companies-settings/:cmp_uuid/:filter?/:page?/:perPage?`, authMiddleware, companySettingCtrl.getAllCtrl);
+    app.get(`/${basePrefix}/companies-settings/:cmp_uuid/:filter?/:page?/:perPage?`, authMiddleware, tenantMiddleware, companySettingCtrl.getAllCtrl);
 
     /**
      * @swagger
@@ -34,7 +35,7 @@ function configureCompanySettingRoutes(app: Express, socketAdapter?: SocketAdapt
      *     security:
      *       - bearerAuth: []
      */
-    app.get(`/${basePrefix}/company-setting/:cmp_uuid/:cmps_uuid`, authMiddleware, companySettingCtrl.getCtrl);
+    app.get(`/${basePrefix}/company-setting/:cmp_uuid/:cmps_uuid`, authMiddleware, tenantMiddleware, companySettingCtrl.getCtrl);
 
     /**
      * @swagger
@@ -46,7 +47,7 @@ function configureCompanySettingRoutes(app: Express, socketAdapter?: SocketAdapt
      *     security:
      *       - bearerAuth: []
      */
-    app.post(`/${basePrefix}/company-setting`, authMiddleware, companySettingCtrl.insertCtrl);
+    app.post(`/${basePrefix}/company-setting`, authMiddleware, tenantMiddleware, companySettingCtrl.insertCtrl);
 
     /**
      * @swagger
@@ -58,7 +59,7 @@ function configureCompanySettingRoutes(app: Express, socketAdapter?: SocketAdapt
      *     security:
      *       - bearerAuth: []
      */
-    app.put(`/${basePrefix}/company-setting/:cmp_uuid/:cmps_uuid`, authMiddleware, companySettingCtrl.updateCtrl);
+    app.put(`/${basePrefix}/company-setting/:cmp_uuid/:cmps_uuid`, authMiddleware, tenantMiddleware, companySettingCtrl.updateCtrl);
 
     /**
      * @swagger
@@ -70,7 +71,7 @@ function configureCompanySettingRoutes(app: Express, socketAdapter?: SocketAdapt
      *     security:
      *       - bearerAuth: []
      */
-    app.delete(`/${basePrefix}/company-setting/:cmp_uuid/:cmps_uuid`, authMiddleware, companySettingCtrl.deleteCtrl);
+    app.delete(`/${basePrefix}/company-setting/:cmp_uuid/:cmps_uuid`, authMiddleware, tenantMiddleware, companySettingCtrl.deleteCtrl);
 }
 
 export default configureCompanySettingRoutes;
