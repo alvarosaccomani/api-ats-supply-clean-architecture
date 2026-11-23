@@ -125,15 +125,23 @@ export class StockMovementUseCase {
                 throw new Error(`El producto con ID ${prd_uuid} no existe en la empresa.`);
             }
 
+            // Normalización defensiva de dirección de stock según tipo de movimiento
+            let delta = qty;
+            if (stkm_type === 'ORDER_OUT' || stkm_type === 'BOM_CONSUMPTION' || stkm_type === 'WASTE') {
+                delta = -Math.abs(qty);
+            } else if (stkm_type === 'PRODUCTION_IN' || stkm_type === 'MANUAL_IN' || stkm_type === 'ORDER_CANCEL_IN') {
+                delta = Math.abs(qty);
+            }
+
             const previousStock = Number(product.prd_currentstock) || 0.0;
-            const newStock = previousStock + qty;
+            const newStock = previousStock + delta;
 
             const movementValue = new StockMovementValue({
                 cmp_uuid,
                 prd_uuid,
                 usr_uuid,
                 stkm_type,
-                stkm_quantity: qty,
+                stkm_quantity: delta,
                 stkm_previousstock: previousStock,
                 stkm_newstock: newStock,
                 stkm_referenceuuid,
