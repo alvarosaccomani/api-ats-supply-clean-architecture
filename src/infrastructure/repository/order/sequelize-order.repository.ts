@@ -6,6 +6,7 @@ import { SequelizeOrderDetail } from "../../model/order/order-detail.model";
 import { SequelizeCustomer } from "../../model/customer/customer.model";
 import { SequelizeUser } from "../../model/user/user.model";
 import { SequelizeProduct } from "../../model/product/product.model";
+import { SequelizePriceTier } from "../../model/price-tier/price-tier.model";
 import { QueryOptions } from "../../../domain/common";
 
 export class SequelizeOrderRepository implements OrderRepository {
@@ -13,7 +14,14 @@ export class SequelizeOrderRepository implements OrderRepository {
         {
             model: SequelizeCustomer,
             as: 'customer',
-            attributes: ['cus_uuid', 'cus_name', 'cus_address', 'cus_phone', 'prct_uuid']
+            attributes: ['cus_uuid', 'cus_name', 'cus_address', 'cus_phone', 'prct_uuid'],
+            include: [
+                {
+                    model: SequelizePriceTier,
+                    as: 'priceTier',
+                    attributes: ['prct_uuid', 'prct_code', 'prct_name', 'prct_isdefault']
+                }
+            ]
         },
         {
             model: SequelizeUser,
