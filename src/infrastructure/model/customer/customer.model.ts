@@ -94,6 +94,12 @@ SequelizeCustomer.belongsTo(SequelizePriceTier, {
   as: 'priceTier'
 });
 
+SequelizePriceTier.hasMany(SequelizeCustomer, {
+  foreignKey: 'prct_uuid',
+  sourceKey: 'prct_uuid',
+  as: 'customers'
+});
+
 if (process.env.NODE_ENV !== "production") {
   SequelizeCustomer.sync();
 }
