@@ -36,7 +36,7 @@ export class CustomerController {
             if (prct_uuid) {
                 where.prct_uuid = prct_uuid;
             }
-            if (search && search.trim() !== '') {
+            if (search && search.trim() !== '' && search.toLowerCase() !== 'all') {
                 const term = `%${search.trim()}%`;
                 where[Op.or] = [
                     { cus_name: { [Op.iLike]: term } },
