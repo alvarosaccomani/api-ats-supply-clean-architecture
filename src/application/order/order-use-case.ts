@@ -211,7 +211,7 @@ export class OrderUseCase {
                         prd_uuid: detail.prd_uuid,
                         usr_uuid: usr_uuid_seller,
                         stkm_type: 'ORDER_OUT',
-                        stkm_quantity: detail.ordd_quantity,
+                        stkm_quantity: -Math.abs(Number(detail.ordd_quantity)),
                         stkm_referenceuuid: createdOrder.ord_uuid,
                         stkm_notes: `Salida por entrega de pedido #${createdOrder.ord_uuid}`
                     }, { transaction });
@@ -262,7 +262,7 @@ export class OrderUseCase {
                         prd_uuid: detail.prd_uuid,
                         usr_uuid: currentOrder.usr_uuid_seller,
                         stkm_type: 'ORDER_OUT',
-                        stkm_quantity: Number(detail.ordd_quantity),
+                        stkm_quantity: -Math.abs(Number(detail.ordd_quantity)),
                         stkm_referenceuuid: ord_uuid,
                         stkm_notes: `Salida por entrega de pedido #${ord_uuid}`
                     }, { transaction });
@@ -277,7 +277,7 @@ export class OrderUseCase {
                         prd_uuid: detail.prd_uuid,
                         usr_uuid: currentOrder.usr_uuid_seller,
                         stkm_type: 'ORDER_CANCEL_IN',
-                        stkm_quantity: Number(detail.ordd_quantity),
+                        stkm_quantity: Math.abs(Number(detail.ordd_quantity)),
                         stkm_referenceuuid: ord_uuid,
                         stkm_notes: `Reingreso por cancelación de pedido entregado #${ord_uuid}`
                     }, { transaction });
