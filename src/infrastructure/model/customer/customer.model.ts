@@ -13,6 +13,8 @@ export class SequelizeCustomer extends Model<CustomerEntity, Partial<CustomerEnt
   declare cus_phone: string | null;
   declare cus_contactname: string | null;
   declare cus_notes: string | null;
+  declare cus_lat: number | null;
+  declare cus_lng: number | null;
   declare cus_active: boolean;
   declare cus_createdat: Date;
   declare cus_updatedat: Date;
@@ -51,6 +53,14 @@ SequelizeCustomer.init({
   },
   cus_notes: {
     type: DataTypes.TEXT,
+    allowNull: true
+  },
+  cus_lat: {
+    type: DataTypes.DECIMAL(10, 8),
+    allowNull: true
+  },
+  cus_lng: {
+    type: DataTypes.DECIMAL(11, 8),
     allowNull: true
   },
   cus_active: {

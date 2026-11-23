@@ -9,6 +9,8 @@ export interface CustomerEntity {
     cus_phone?: string | null;
     cus_contactname?: string | null;
     cus_notes?: string | null;
+    cus_lat?: number | null;
+    cus_lng?: number | null;
     cus_active: boolean;
     cus_createdat: Date;
     cus_updatedat: Date;
@@ -24,6 +26,8 @@ export interface CustomerCreateInput {
     cus_phone?: string | null;
     cus_contactname?: string | null;
     cus_notes?: string | null;
+    cus_lat?: number | null;
+    cus_lng?: number | null;
     cus_active?: boolean;
 }
 
@@ -34,5 +38,7 @@ export type CustomerUpdateData = Partial<Pick<CustomerEntity,
     'cus_phone' | 
     'cus_contactname' | 
     'cus_notes' | 
+    'cus_lat' | 
+    'cus_lng' | 
     'cus_active'
 >>;

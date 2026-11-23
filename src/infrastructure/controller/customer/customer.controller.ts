@@ -108,7 +108,7 @@ export class CustomerController {
     public async insertCtrl(req: Request, res: Response) {
         try {
             const cmp_uuid = (req.params.cmp_uuid || req.body.cmp_uuid || (req as any).tenant?.cmp_uuid) as string;
-            const { prct_uuid, cus_name, cus_address, cus_phone, cus_contactname, cus_notes, cus_active } = req.body;
+            const { prct_uuid, cus_name, cus_address, cus_phone, cus_contactname, cus_notes, cus_lat, cus_lng, cus_active } = req.body;
 
             if (!cmp_uuid) {
                 return res.status(400).json({
@@ -126,6 +126,8 @@ export class CustomerController {
                 cus_phone,
                 cus_contactname,
                 cus_notes,
+                cus_lat: cus_lat !== undefined && cus_lat !== null && cus_lat !== '' ? Number(cus_lat) : null,
+                cus_lng: cus_lng !== undefined && cus_lng !== null && cus_lng !== '' ? Number(cus_lng) : null,
                 cus_active: cus_active !== undefined ? Boolean(cus_active) : true
             });
 
@@ -148,7 +150,7 @@ export class CustomerController {
         try {
             const cmp_uuid = (req.params.cmp_uuid || req.body.cmp_uuid || (req as any).tenant?.cmp_uuid) as string;
             const cus_uuid = req.params.cus_uuid;
-            const { prct_uuid, cus_name, cus_address, cus_phone, cus_contactname, cus_notes, cus_active } = req.body;
+            const { prct_uuid, cus_name, cus_address, cus_phone, cus_contactname, cus_notes, cus_lat, cus_lng, cus_active } = req.body;
 
             if (!cmp_uuid || !cus_uuid) {
                 return res.status(400).json({
@@ -165,6 +167,8 @@ export class CustomerController {
                 cus_phone,
                 cus_contactname,
                 cus_notes,
+                cus_lat: cus_lat !== undefined ? (cus_lat !== null && cus_lat !== '' ? Number(cus_lat) : null) : undefined,
+                cus_lng: cus_lng !== undefined ? (cus_lng !== null && cus_lng !== '' ? Number(cus_lng) : null) : undefined,
                 cus_active: cus_active !== undefined ? Boolean(cus_active) : undefined
             });
 
