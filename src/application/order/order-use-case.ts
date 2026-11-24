@@ -165,6 +165,9 @@ export class OrderUseCase {
                 if (!product.prd_active) {
                     throw new Error(`El producto '${product.prd_name}' está inactivo y no se puede vender.`);
                 }
+                if (product.prd_type === 'SUPPLY') {
+                    throw new Error(`El artículo '${product.prd_name}' es un insumo / materia prima y no puede ser vendido en un pedido.`);
+                }
 
                 let unitPrice = Number(item.ordd_unitprice);
                 if (isNaN(unitPrice) || unitPrice <= 0) {
@@ -301,6 +304,12 @@ export class OrderUseCase {
                     const product = await this.productRepository.findProductById(cmp_uuid, item.prd_uuid, { transaction });
                     if (!product) {
                         throw new Error(`El producto con ID ${item.prd_uuid} no existe.`);
+                    }
+                    if (!product.prd_active) {
+                        throw new Error(`El producto '${product.prd_name}' está inactivo y no se puede vender.`);
+                    }
+                    if (product.prd_type === 'SUPPLY') {
+                        throw new Error(`El artículo '${product.prd_name}' es un insumo / materia prima y no puede ser vendido en un pedido.`);
                     }
 
                     let unitPrice = Number(item.ordd_unitprice);
