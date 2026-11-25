@@ -93,10 +93,36 @@ export class UserController {
                     error: 'El usuario ya existe.'
                 });
             }
+
+            // Sincronización federada con el Kernel Central
+            const centralUrl = (process.env.CENTRAL_API_URL ? process.env.CENTRAL_API_URL.replace('/auth/sso/verify', '/register') : null) || 'http://localhost:3006/api/register';
+            try {
+                const centralRes = await fetch(centralUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                const centralData = await centralRes.json() as any;
+
+                if (!centralRes.ok || (centralData && centralData.success === false)) {
+                    return res.status(400).json({
+                        success: false,
+                        message: centralData?.message || 'No se pudo registrar el usuario en el Kernel Central.',
+                        error: centralData?.error || centralData?.message
+                    });
+                }
+
+                if (centralData?.user?.usr_uuid) {
+                    body.usr_uuid = centralData.user.usr_uuid;
+                }
+            } catch (centralError: any) {
+                console.warn('Advertencia: No se pudo contactar el Kernel Central:', centralError.message);
+            }
+
             const user = await this.userUseCase.registerUser(body);
             return res.status(201).json({
                 success: true,
-                message: 'Usuario insertado.',
+                message: 'Usuario insertado de forma unificada.',
                 data: user
             });
         } catch (error: any) {
