@@ -44,10 +44,6 @@ SequelizeCompanySetting.init({
     type: DataTypes.TEXT,
     allowNull: false
   },
-  cmps_datatype: {
-    type: DataTypes.STRING(30),
-    allowNull: true
-  },
   dtp_uuid: {
     type: DataTypes.STRING(40),
     allowNull: true
