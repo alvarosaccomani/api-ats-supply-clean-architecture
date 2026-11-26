@@ -112,7 +112,7 @@ export class CustomerMovementController {
             const cmp_uuid = (req.body.cmp_uuid || (req as any).tenant?.cmp_uuid) as string;
             const user = (req as any).user;
             const usr_uuid = user?.sub || user?.usr_uuid;
-            const { cus_uuid, amount, payment_method, receipt_number, notes } = req.body;
+            const { cus_uuid, amount, ord_uuid, payment_method, receipt_number, notes } = req.body;
 
             if (!cmp_uuid || !cus_uuid) {
                 return res.status(400).json({
@@ -134,6 +134,7 @@ export class CustomerMovementController {
                 usr_uuid,
                 cusm_type: 'PAYMENT_CREDIT',
                 cusm_amount: Number(amount),
+                ord_uuid: ord_uuid || null,
                 cusm_paymentmethod: payment_method || 'EFECTIVO',
                 cusm_receiptnumber: receipt_number || null,
                 cusm_notes: notes || 'Cobranza / Pago recibido a cuenta corriente'
