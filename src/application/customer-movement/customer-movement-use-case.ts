@@ -2,6 +2,8 @@ import { CustomerMovementRepository } from "../../domain/customer-movement/custo
 import { CustomerMovementValue } from "../../domain/customer-movement/customer-movement.value";
 import { CustomerMovementEntity, CustomerMovementType } from "../../domain/customer-movement/customer-movement.entity";
 import { CustomerRepository } from "../../domain/customer/customer.repository";
+import { OrderRepository } from "../../domain/order/order.repository";
+import { OrderHistoryUseCase } from "../order-history/order-history-use-case";
 import { QueryOptions } from "../../domain/common";
 import { TimezoneConverter } from "../../infrastructure/utils/TimezoneConverter";
 
@@ -20,7 +22,9 @@ export interface RegisterCustomerMovementDTO {
 export class CustomerMovementUseCase {
     constructor(
         private readonly customerMovementRepository: CustomerMovementRepository,
-        private readonly customerRepository: CustomerRepository
+        private readonly customerRepository: CustomerRepository,
+        private readonly orderRepository?: OrderRepository,
+        private readonly orderHistoryUseCase?: OrderHistoryUseCase
     ) {
         this.getMovements = this.getMovements.bind(this);
         this.getMovementsAndCount = this.getMovementsAndCount.bind(this);
@@ -166,6 +170,51 @@ export class CustomerMovementUseCase {
 
             // Actualizar saldo deudor actual en la ficha del cliente
             await this.customerRepository.updateCustomerBalance(cmp_uuid, cus_uuid, newBalance, options);
+
+            // Asignación de pago a órdenes (Directa o FIFO)
+            if (cusm_type === 'PAYMENT_CREDIT' && this.orderHistoryUseCase) {
+                if (ord_uuid) {
+                    // Pago asignado puntualmente a un pedido
+                    await this.orderHistoryUseCase.recordTransition({
+                        cmp_uuid,
+                        ord_uuid,
+                        usr_uuid,
+                        ordh_previousstatus: 'CUENTA_CORRIENTE',
+                        ordh_newstatus: 'CUENTA_CORRIENTE',
+                        ordh_notes: `Pago de $${rawAmount} recibido en Cta. Cte.${cusm_receiptnumber ? ` (Recibo: ${cusm_receiptnumber})` : ''}${cusm_paymentmethod ? ` [${cusm_paymentmethod}]` : ''}`
+                    }, options);
+                } else if (this.orderRepository) {
+                    // Pago global a cuenta: distribuir vía FIFO en órdenes pendientes de Cta. Cte.
+                    const pendingOrders = await this.orderRepository.getCreditOrdersByCustomer(cmp_uuid, cus_uuid, options);
+                    let remainingToAllocate = rawAmount;
+                    for (const order of (pendingOrders || [])) {
+                        if (remainingToAllocate <= 0) break;
+                        const orderTotal = Number(order.ord_totalamount);
+                        if (remainingToAllocate >= orderTotal) {
+                            remainingToAllocate -= orderTotal;
+                            await this.orderHistoryUseCase.recordTransition({
+                                cmp_uuid,
+                                ord_uuid: order.ord_uuid,
+                                usr_uuid,
+                                ordh_previousstatus: 'CUENTA_CORRIENTE',
+                                ordh_newstatus: 'CUENTA_CORRIENTE',
+                                ordh_notes: `Orden saldada al 100% por cobranza global en Cta. Cte. ($${orderTotal})${cusm_receiptnumber ? ` (Recibo: ${cusm_receiptnumber})` : ''}`
+                            }, options);
+                        } else {
+                            const partialAllocated = remainingToAllocate;
+                            remainingToAllocate = 0;
+                            await this.orderHistoryUseCase.recordTransition({
+                                cmp_uuid,
+                                ord_uuid: order.ord_uuid,
+                                usr_uuid,
+                                ordh_previousstatus: 'CUENTA_CORRIENTE',
+                                ordh_newstatus: 'CUENTA_CORRIENTE',
+                                ordh_notes: `Pago parcial de $${partialAllocated} sobre $${orderTotal} recibido en Cta. Cte.${cusm_receiptnumber ? ` (Recibo: ${cusm_receiptnumber})` : ''}`
+                            }, options);
+                        }
+                    }
+                }
+            }
 
             return this.formatMovement({
                 ...created,
