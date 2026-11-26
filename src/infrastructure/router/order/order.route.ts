@@ -24,8 +24,8 @@ function configureOrderRoutes(app: Express, socketAdapter?: SocketAdapter) {
     const orderHistoryRepository = new SequelizeOrderHistoryRepository();
 
     const stockMovementUseCase = new StockMovementUseCase(stockMovementRepository, productRepository);
-    const customerMovementUseCase = new CustomerMovementUseCase(customerMovementRepository, customerRepository);
     const orderHistoryUseCase = new OrderHistoryUseCase(orderHistoryRepository);
+    const customerMovementUseCase = new CustomerMovementUseCase(customerMovementRepository, customerRepository, orderRepository, orderHistoryUseCase);
     const orderUseCase = new OrderUseCase(orderRepository, customerRepository, productRepository, stockMovementUseCase, companySettingRepository, customerMovementUseCase, orderHistoryUseCase);
     const controller = new OrderController(orderUseCase);
 
