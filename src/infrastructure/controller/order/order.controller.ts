@@ -9,6 +9,7 @@ export class OrderController {
         this.getCtrl = this.getCtrl.bind(this);
         this.insertCtrl = this.insertCtrl.bind(this);
         this.updateCtrl = this.updateCtrl.bind(this);
+        this.assignDriverCtrl = this.assignDriverCtrl.bind(this);
         this.deleteCtrl = this.deleteCtrl.bind(this);
     }
 
@@ -192,6 +193,41 @@ export class OrderController {
             return res.status(400).json({
                 success: false,
                 message: "No se pudo actualizar el pedido.",
+                error: error.message
+            });
+        }
+    }
+
+    public async assignDriverCtrl(req: Request, res: Response) {
+        try {
+            const cmp_uuid = (req.body.cmp_uuid || (req as any).tenant?.cmp_uuid) as string;
+            const { ord_uuids, usr_uuid_driver } = req.body;
+
+            if (!cmp_uuid || !ord_uuids || !Array.isArray(ord_uuids) || ord_uuids.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Debe proporcionar cmp_uuid y una lista de ord_uuids."
+                });
+            }
+
+            const updatedOrders = [];
+            for (const ord_uuid of ord_uuids) {
+                const updated = await this.orderUseCase.updateOrder(cmp_uuid, ord_uuid, {
+                    usr_uuid_driver: usr_uuid_driver ?? null
+                });
+                updatedOrders.push(updated);
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: "Chofer asignado a los pedidos con éxito.",
+                data: updatedOrders
+            });
+        } catch (error: any) {
+            console.error("Error en assignDriverCtrl (order controller):", error.message);
+            return res.status(400).json({
+                success: false,
+                message: "Error al asignar chofer a los pedidos.",
                 error: error.message
             });
         }
