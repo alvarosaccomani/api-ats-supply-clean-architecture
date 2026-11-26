@@ -172,44 +172,90 @@ export class CustomerMovementUseCase {
             await this.customerRepository.updateCustomerBalance(cmp_uuid, cus_uuid, newBalance, options);
 
             // Asignación de pago a órdenes (Directa o FIFO)
-            if (cusm_type === 'PAYMENT_CREDIT' && this.orderHistoryUseCase) {
+            if (cusm_type === 'PAYMENT_CREDIT' && this.orderHistoryUseCase && this.orderRepository) {
                 if (ord_uuid) {
                     // Pago asignado puntualmente a un pedido
-                    await this.orderHistoryUseCase.recordTransition({
-                        cmp_uuid,
-                        ord_uuid,
-                        usr_uuid,
-                        ordh_previousstatus: 'CUENTA_CORRIENTE',
-                        ordh_newstatus: 'CUENTA_CORRIENTE',
-                        ordh_notes: `Pago de $${rawAmount} recibido en Cta. Cte.${cusm_receiptnumber ? ` (Recibo: ${cusm_receiptnumber})` : ''}${cusm_paymentmethod ? ` [${cusm_paymentmethod}]` : ''}`
-                    }, options);
-                } else if (this.orderRepository) {
+                    const order = await this.orderRepository.findOrderById(cmp_uuid, ord_uuid, options);
+                    if (order) {
+                        const orderTotal = Number(order.ord_totalamount);
+                        const currentPaid = Number(order.ord_paidamount) || 0;
+                        const newPaid = Number((currentPaid + rawAmount).toFixed(2));
+
+                        if (newPaid >= orderTotal) {
+                            await this.orderRepository.updateOrder(cmp_uuid, ord_uuid, {
+                                ord_status: 'PAGADO',
+                                ord_paidamount: orderTotal
+                            }, options);
+
+                            await this.orderHistoryUseCase.recordTransition({
+                                cmp_uuid,
+                                ord_uuid,
+                                usr_uuid,
+                                ordh_previousstatus: 'CUENTA_CORRIENTE',
+                                ordh_newstatus: 'PAGADO',
+                                ordh_notes: `Orden saldada al 100% por cobranza en Cta. Cte. ($${rawAmount})${cusm_receiptnumber ? ` (Recibo: ${cusm_receiptnumber})` : ''}${cusm_paymentmethod ? ` [${cusm_paymentmethod}]` : ''}. Total orden: $${orderTotal}`
+                            }, options);
+                        } else {
+                            const remainingDebt = Number((orderTotal - newPaid).toFixed(2));
+                            await this.orderRepository.updateOrder(cmp_uuid, ord_uuid, {
+                                ord_paidamount: newPaid
+                            }, options);
+
+                            await this.orderHistoryUseCase.recordTransition({
+                                cmp_uuid,
+                                ord_uuid,
+                                usr_uuid,
+                                ordh_previousstatus: 'CUENTA_CORRIENTE',
+                                ordh_newstatus: 'CUENTA_CORRIENTE',
+                                ordh_notes: `Pago parcial de $${rawAmount} recibido en Cta. Cte.${cusm_receiptnumber ? ` (Recibo: ${cusm_receiptnumber})` : ''}${cusm_paymentmethod ? ` [${cusm_paymentmethod}]` : ''} (Acumulado: $${newPaid} de $${orderTotal}, Resta: $${remainingDebt})`
+                            }, options);
+                        }
+                    }
+                } else {
                     // Pago global a cuenta: distribuir vía FIFO en órdenes pendientes de Cta. Cte.
                     const pendingOrders = await this.orderRepository.getCreditOrdersByCustomer(cmp_uuid, cus_uuid, options);
                     let remainingToAllocate = rawAmount;
+
                     for (const order of (pendingOrders || [])) {
                         if (remainingToAllocate <= 0) break;
                         const orderTotal = Number(order.ord_totalamount);
-                        if (remainingToAllocate >= orderTotal) {
-                            remainingToAllocate -= orderTotal;
+                        const currentPaid = Number(order.ord_paidamount) || 0;
+                        const remainingOnOrder = Number((orderTotal - currentPaid).toFixed(2));
+                        if (remainingOnOrder <= 0) continue;
+
+                        if (remainingToAllocate >= remainingOnOrder) {
+                            remainingToAllocate = Number((remainingToAllocate - remainingOnOrder).toFixed(2));
+
+                            await this.orderRepository.updateOrder(cmp_uuid, order.ord_uuid, {
+                                ord_status: 'PAGADO',
+                                ord_paidamount: orderTotal
+                            }, options);
+
                             await this.orderHistoryUseCase.recordTransition({
                                 cmp_uuid,
                                 ord_uuid: order.ord_uuid,
                                 usr_uuid,
                                 ordh_previousstatus: 'CUENTA_CORRIENTE',
-                                ordh_newstatus: 'CUENTA_CORRIENTE',
-                                ordh_notes: `Orden saldada al 100% por cobranza global en Cta. Cte. ($${orderTotal})${cusm_receiptnumber ? ` (Recibo: ${cusm_receiptnumber})` : ''}`
+                                ordh_newstatus: 'PAGADO',
+                                ordh_notes: `Orden saldada al 100% por cobranza en Cta. Cte. ($${remainingOnOrder})${cusm_receiptnumber ? ` (Recibo: ${cusm_receiptnumber})` : ''}. Total orden: $${orderTotal}`
                             }, options);
                         } else {
                             const partialAllocated = remainingToAllocate;
+                            const newPaid = Number((currentPaid + partialAllocated).toFixed(2));
+                            const remainingDebt = Number((orderTotal - newPaid).toFixed(2));
                             remainingToAllocate = 0;
+
+                            await this.orderRepository.updateOrder(cmp_uuid, order.ord_uuid, {
+                                ord_paidamount: newPaid
+                            }, options);
+
                             await this.orderHistoryUseCase.recordTransition({
                                 cmp_uuid,
                                 ord_uuid: order.ord_uuid,
                                 usr_uuid,
                                 ordh_previousstatus: 'CUENTA_CORRIENTE',
                                 ordh_newstatus: 'CUENTA_CORRIENTE',
-                                ordh_notes: `Pago parcial de $${partialAllocated} sobre $${orderTotal} recibido en Cta. Cte.${cusm_receiptnumber ? ` (Recibo: ${cusm_receiptnumber})` : ''}`
+                                ordh_notes: `Pago parcial de $${partialAllocated} recibido en Cta. Cte.${cusm_receiptnumber ? ` (Recibo: ${cusm_receiptnumber})` : ''} (Acumulado: $${newPaid} de $${orderTotal}, Resta: $${remainingDebt})`
                             }, options);
                         }
                     }
