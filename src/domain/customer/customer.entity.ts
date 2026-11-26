@@ -12,6 +12,7 @@ export interface CustomerEntity {
     cus_lat?: number | null;
     cus_lng?: number | null;
     cus_hascredit: boolean;
+    cus_currentbalance: number;
     cus_active: boolean;
     cus_createdat: Date;
     cus_updatedat: Date;
@@ -30,6 +31,7 @@ export interface CustomerCreateInput {
     cus_lat?: number | null;
     cus_lng?: number | null;
     cus_hascredit?: boolean;
+    cus_currentbalance?: number;
     cus_active?: boolean;
 }
 
@@ -43,5 +45,6 @@ export type CustomerUpdateData = Partial<Pick<CustomerEntity,
     'cus_lat' | 
     'cus_lng' | 
     'cus_hascredit' |
+    'cus_currentbalance' |
     'cus_active'
 >>;
