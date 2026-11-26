@@ -7,6 +7,7 @@ import { ProductRepository } from "../../domain/product/product.repository";
 import { CompanySettingRepository } from "../../domain/company-setting/company-setting.repository";
 import { StockMovementUseCase } from "../stock-movement/stock-movement-use-case";
 import { CustomerMovementUseCase } from "../customer-movement/customer-movement-use-case";
+import { OrderHistoryUseCase } from "../order-history/order-history-use-case";
 import { QueryOptions } from "../../domain/common";
 import { TimezoneConverter } from "../../infrastructure/utils/TimezoneConverter";
 import { sequelize } from "../../infrastructure/db/sequelize";
@@ -18,7 +19,8 @@ export class OrderUseCase {
         private readonly productRepository: ProductRepository,
         private readonly stockMovementUseCase: StockMovementUseCase,
         private readonly companySettingRepository?: CompanySettingRepository,
-        private readonly customerMovementUseCase?: CustomerMovementUseCase
+        private readonly customerMovementUseCase?: CustomerMovementUseCase,
+        private readonly orderHistoryUseCase?: OrderHistoryUseCase
     ) {
         this.getOrders = this.getOrders.bind(this);
         this.getOrdersAndCount = this.getOrdersAndCount.bind(this);
@@ -258,6 +260,19 @@ export class OrderUseCase {
                 }, { transaction });
             }
 
+            // Registro inicial en el historial de estados
+            if (this.orderHistoryUseCase) {
+                await this.orderHistoryUseCase.recordTransition({
+                    cmp_uuid,
+                    ord_uuid: createdOrder.ord_uuid,
+                    usr_uuid: usr_uuid_seller,
+                    ordh_previousstatus: null,
+                    ordh_newstatus: createdOrder.ord_status,
+                    ordh_notes: 'Alta inicial del pedido',
+                    ordh_createdat: createdOrder.ord_createdat
+                }, { transaction });
+            }
+
             if (shouldCommit) {
                 await transaction.commit();
             }
@@ -394,6 +409,19 @@ export class OrderUseCase {
                     cusm_amount: Number(newTotalAmount),
                     ord_uuid,
                     cusm_notes: `Débito en Cta. Cte. por entrega de pedido #${ord_uuid}`
+                }, { transaction });
+            }
+
+            // 4. Registro de auditoría de cambio de estado
+            if (currentStatus !== targetStatus && this.orderHistoryUseCase) {
+                const operatorUuid = data.usr_uuid_operator || data.usr_uuid_driver || currentOrder.usr_uuid_driver || currentOrder.usr_uuid_seller;
+                await this.orderHistoryUseCase.recordTransition({
+                    cmp_uuid,
+                    ord_uuid,
+                    usr_uuid: operatorUuid,
+                    ordh_previousstatus: currentStatus,
+                    ordh_newstatus: targetStatus,
+                    ordh_notes: data.ord_notes || (targetStatus === 'CANCELADO' ? 'Cancelación de pedido' : (targetStatus === 'CUENTA_CORRIENTE' ? 'Entrega en Cuenta Corriente' : `Cambio de estado a ${targetStatus}`))
                 }, { transaction });
             }
 
