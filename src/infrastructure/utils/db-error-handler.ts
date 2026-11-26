@@ -16,6 +16,7 @@ export class DbErrorHandler {
         'itm_items': { name: 'rubros', gender: 'm' },
         'mitm_modelsitems': { name: 'rubros de modelos', gender: 'm' },
         'mnu_menu': { name: 'menus', gender: 'm' },
+        'ordh_orderhistory': { name: 'historial de pedidos', gender: 'm' },
         'per_permissions': { name: 'permisos', gender: 'm' },
         'pmt_paymentmethods': { name: 'metodos de pago', gender: 'm' },
         'remo_resourcesmodules': { name: 'modulos de recursos', gender: 'm' },
