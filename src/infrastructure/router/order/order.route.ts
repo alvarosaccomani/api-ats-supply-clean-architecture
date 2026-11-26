@@ -5,8 +5,10 @@ import { SequelizeProductRepository } from "../../repository/product/sequelize-p
 import { SequelizeStockMovementRepository } from "../../repository/stock-movement/sequelize-stock-movement.repository";
 import { SequelizeCompanySettingRepository } from "../../repository/company-setting/sequelize-company-setting.repository";
 import { SequelizeCustomerMovementRepository } from "../../repository/customer-movement/sequelize-customer-movement.repository";
+import { SequelizeOrderHistoryRepository } from "../../repository/order-history/sequelize-order-history.repository";
 import { StockMovementUseCase } from "../../../application/stock-movement/stock-movement-use-case";
 import { CustomerMovementUseCase } from "../../../application/customer-movement/customer-movement-use-case";
+import { OrderHistoryUseCase } from "../../../application/order-history/order-history-use-case";
 import { OrderUseCase } from "../../../application/order/order-use-case";
 import { OrderController } from "../../controller/order/order.controller";
 import { authMiddleware, tenantMiddleware } from "../../middlewares";
@@ -19,10 +21,12 @@ function configureOrderRoutes(app: Express, socketAdapter?: SocketAdapter) {
     const stockMovementRepository = new SequelizeStockMovementRepository();
     const companySettingRepository = new SequelizeCompanySettingRepository();
     const customerMovementRepository = new SequelizeCustomerMovementRepository();
+    const orderHistoryRepository = new SequelizeOrderHistoryRepository();
 
     const stockMovementUseCase = new StockMovementUseCase(stockMovementRepository, productRepository);
     const customerMovementUseCase = new CustomerMovementUseCase(customerMovementRepository, customerRepository);
-    const orderUseCase = new OrderUseCase(orderRepository, customerRepository, productRepository, stockMovementUseCase, companySettingRepository, customerMovementUseCase);
+    const orderHistoryUseCase = new OrderHistoryUseCase(orderHistoryRepository);
+    const orderUseCase = new OrderUseCase(orderRepository, customerRepository, productRepository, stockMovementUseCase, companySettingRepository, customerMovementUseCase, orderHistoryUseCase);
     const controller = new OrderController(orderUseCase);
 
     const basePrefix = process.env.BASE_URL_API || 'api';
