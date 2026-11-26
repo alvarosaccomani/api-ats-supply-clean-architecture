@@ -30,6 +30,7 @@ export class CustomerUseCase {
             cus_notes: customer.cus_notes ?? null,
             cus_lat: customer.cus_lat !== undefined && customer.cus_lat !== null ? Number(customer.cus_lat) : null,
             cus_lng: customer.cus_lng !== undefined && customer.cus_lng !== null ? Number(customer.cus_lng) : null,
+            cus_hascredit: Boolean(customer.cus_hascredit),
             cus_active: Boolean(customer.cus_active),
             cus_createdat: TimezoneConverter.toIsoStringInTimezone(customer.cus_createdat, 'America/Buenos_Aires'),
             cus_updatedat: TimezoneConverter.toIsoStringInTimezone(customer.cus_updatedat, 'America/Buenos_Aires'),

@@ -45,6 +45,9 @@ export class OrderUseCase {
                 cus_name: order.customer.cus_name,
                 cus_address: order.customer.cus_address,
                 cus_phone: order.customer.cus_phone ?? null,
+                cus_lat: order.customer.cus_lat !== undefined && order.customer.cus_lat !== null ? Number(order.customer.cus_lat) : null,
+                cus_lng: order.customer.cus_lng !== undefined && order.customer.cus_lng !== null ? Number(order.customer.cus_lng) : null,
+                cus_hascredit: Boolean(order.customer.cus_hascredit),
                 prct_uuid: order.customer.prct_uuid
             } : undefined,
             seller: order.seller ? {

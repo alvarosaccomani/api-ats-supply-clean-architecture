@@ -14,7 +14,7 @@ export class SequelizeOrderRepository implements OrderRepository {
         {
             model: SequelizeCustomer,
             as: 'customer',
-            attributes: ['cus_uuid', 'cus_name', 'cus_address', 'cus_phone', 'prct_uuid'],
+            attributes: ['cus_uuid', 'cus_name', 'cus_address', 'cus_phone', 'cus_lat', 'cus_lng', 'cus_hascredit', 'prct_uuid'],
             include: [
                 {
                     model: SequelizePriceTier,
