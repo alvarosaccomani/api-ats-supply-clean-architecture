@@ -7,5 +7,5 @@ export interface StockMovementRepository {
     findMovementById(cmp_uuid: string, stkm_uuid: string, options?: QueryOptions): Promise<StockMovementEntity | null>;
     createMovement(movement: StockMovementCreateInput, options?: QueryOptions): Promise<StockMovementEntity | null>;
     getLastMovementByProduct(cmp_uuid: string, prd_uuid: string, options?: QueryOptions): Promise<StockMovementEntity | null>;
-    getLatestTruckMovement(cmp_uuid: string, options?: QueryOptions): Promise<StockMovementEntity | null>;
+    getLatestTruckMovement(cmp_uuid: string, options?: QueryOptions, driver_uuid?: string): Promise<StockMovementEntity | null>;
 }
