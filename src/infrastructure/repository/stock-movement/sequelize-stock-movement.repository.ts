@@ -116,13 +116,21 @@ export class SequelizeStockMovementRepository implements StockMovementRepository
         }
     }
 
-    async getLatestTruckMovement(cmp_uuid: string, options?: QueryOptions): Promise<StockMovementEntity | null> {
+    async getLatestTruckMovement(cmp_uuid: string, options?: QueryOptions, driver_uuid?: string): Promise<StockMovementEntity | null> {
         try {
+            const whereClause: any = {
+                cmp_uuid,
+                stkm_type: { [Op.in]: ['TRUCK_LOAD_OUT', 'TRUCK_RETURN_IN'] }
+            };
+
+            if (driver_uuid) {
+                whereClause.stkm_referenceuuid = driver_uuid;
+            } else if (options?.where && (options.where as any).stkm_referenceuuid) {
+                whereClause.stkm_referenceuuid = (options.where as any).stkm_referenceuuid;
+            }
+
             const movement = await SequelizeStockMovement.findOne({
-                where: {
-                    cmp_uuid,
-                    stkm_type: { [Op.in]: ['TRUCK_LOAD_OUT', 'TRUCK_RETURN_IN'] }
-                },
+                where: whereClause,
                 order: [['stkm_createdat', 'DESC']],
                 transaction: options?.transaction
             });
