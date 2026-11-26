@@ -127,9 +127,9 @@ export class StockMovementUseCase {
 
             // Normalización defensiva de dirección de stock según tipo de movimiento
             let delta = qty;
-            if (stkm_type === 'ORDER_OUT' || stkm_type === 'BOM_CONSUMPTION' || stkm_type === 'WASTE') {
+            if (stkm_type === 'ORDER_OUT' || stkm_type === 'BOM_CONSUMPTION' || stkm_type === 'WASTE' || stkm_type === 'TRUCK_LOAD_OUT') {
                 delta = -Math.abs(qty);
-            } else if (stkm_type === 'PRODUCTION_IN' || stkm_type === 'MANUAL_IN' || stkm_type === 'ORDER_CANCEL_IN') {
+            } else if (stkm_type === 'PRODUCTION_IN' || stkm_type === 'MANUAL_IN' || stkm_type === 'ORDER_CANCEL_IN' || stkm_type === 'TRUCK_RETURN_IN') {
                 delta = Math.abs(qty);
             }
 

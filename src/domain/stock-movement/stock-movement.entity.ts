@@ -8,6 +8,8 @@ export type StockMovementType =
     | 'MANUAL_IN' 
     | 'ORDER_OUT' 
     | 'ORDER_CANCEL_IN' 
+    | 'TRUCK_LOAD_OUT'
+    | 'TRUCK_RETURN_IN'
     | 'ADJUSTMENT';
 
 export interface StockMovementEntity {
