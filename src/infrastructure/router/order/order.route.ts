@@ -3,6 +3,7 @@ import { SequelizeOrderRepository } from "../../repository/order/sequelize-order
 import { SequelizeCustomerRepository } from "../../repository/customer/sequelize-customer.repository";
 import { SequelizeProductRepository } from "../../repository/product/sequelize-product.repository";
 import { SequelizeStockMovementRepository } from "../../repository/stock-movement/sequelize-stock-movement.repository";
+import { SequelizeCompanySettingRepository } from "../../repository/company-setting/sequelize-company-setting.repository";
 import { StockMovementUseCase } from "../../../application/stock-movement/stock-movement-use-case";
 import { OrderUseCase } from "../../../application/order/order-use-case";
 import { OrderController } from "../../controller/order/order.controller";
@@ -14,9 +15,10 @@ function configureOrderRoutes(app: Express, socketAdapter?: SocketAdapter) {
     const customerRepository = new SequelizeCustomerRepository();
     const productRepository = new SequelizeProductRepository();
     const stockMovementRepository = new SequelizeStockMovementRepository();
+    const companySettingRepository = new SequelizeCompanySettingRepository();
 
     const stockMovementUseCase = new StockMovementUseCase(stockMovementRepository, productRepository);
-    const orderUseCase = new OrderUseCase(orderRepository, customerRepository, productRepository, stockMovementUseCase);
+    const orderUseCase = new OrderUseCase(orderRepository, customerRepository, productRepository, stockMovementUseCase, companySettingRepository);
     const controller = new OrderController(orderUseCase);
 
     const basePrefix = process.env.BASE_URL_API || 'api';

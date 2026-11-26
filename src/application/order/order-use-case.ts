@@ -4,6 +4,7 @@ import { OrderEntity, OrderCreateInput, OrderUpdateData, OrderStatus } from "../
 import { OrderDetailEntity } from "../../domain/order/order-detail.entity";
 import { CustomerRepository } from "../../domain/customer/customer.repository";
 import { ProductRepository } from "../../domain/product/product.repository";
+import { CompanySettingRepository } from "../../domain/company-setting/company-setting.repository";
 import { StockMovementUseCase } from "../stock-movement/stock-movement-use-case";
 import { QueryOptions } from "../../domain/common";
 import { TimezoneConverter } from "../../infrastructure/utils/TimezoneConverter";
@@ -14,7 +15,8 @@ export class OrderUseCase {
         private readonly orderRepository: OrderRepository,
         private readonly customerRepository: CustomerRepository,
         private readonly productRepository: ProductRepository,
-        private readonly stockMovementUseCase: StockMovementUseCase
+        private readonly stockMovementUseCase: StockMovementUseCase,
+        private readonly companySettingRepository?: CompanySettingRepository
     ) {
         this.getOrders = this.getOrders.bind(this);
         this.getOrdersAndCount = this.getOrdersAndCount.bind(this);
@@ -74,6 +76,21 @@ export class OrderUseCase {
                 } : undefined
             }))
         };
+    }
+
+    private async getStockDeductionMode(cmp_uuid: string, options?: QueryOptions): Promise<'ON_DELIVERY' | 'ON_TRUCK_LOAD'> {
+        if (!this.companySettingRepository) {
+            return 'ON_DELIVERY';
+        }
+        try {
+            const setting = await this.companySettingRepository.findCompanySettingByKey(cmp_uuid, 'STOCK_DEDUCTION_MODE', null, options);
+            if (setting && setting.cmps_value === 'ON_TRUCK_LOAD') {
+                return 'ON_TRUCK_LOAD';
+            }
+            return 'ON_DELIVERY';
+        } catch {
+            return 'ON_DELIVERY';
+        }
     }
 
     private isDeliveredStatus(status: OrderStatus): boolean {
@@ -206,8 +223,9 @@ export class OrderUseCase {
                 throw new Error("No se pudo registrar la cabecera y detalle del pedido.");
             }
 
-            // Si el pedido se da de alta en estado de entrega directa, descontar stock de inmediato
-            if (this.isDeliveredStatus(createdOrder.ord_status)) {
+            // Si el pedido se da de alta en estado de entrega directa, evaluar modo de stock
+            const deductionMode = await this.getStockDeductionMode(cmp_uuid, { transaction });
+            if (this.isDeliveredStatus(createdOrder.ord_status) && deductionMode === 'ON_DELIVERY') {
                 for (const detail of (createdOrder.details || [])) {
                     await this.stockMovementUseCase.registerMovement({
                         cmp_uuid,
@@ -254,11 +272,12 @@ export class OrderUseCase {
             const targetStatus = data.ord_status || currentStatus;
 
             // Manejo de transiciones de stock
+            const deductionMode = await this.getStockDeductionMode(cmp_uuid, { transaction });
             const wasDelivered = this.isDeliveredStatus(currentStatus);
             const willBeDelivered = this.isDeliveredStatus(targetStatus);
 
-            // 1. De Pendiente a Entregado: Descontar stock
-            if (!wasDelivered && willBeDelivered) {
+            // 1. De Pendiente a Entregado: Descontar stock (solo si el modo es ON_DELIVERY)
+            if (!wasDelivered && willBeDelivered && deductionMode === 'ON_DELIVERY') {
                 for (const detail of (currentOrder.details || [])) {
                     await this.stockMovementUseCase.registerMovement({
                         cmp_uuid,
@@ -272,8 +291,8 @@ export class OrderUseCase {
                 }
             }
 
-            // 2. De Entregado a Cancelado: Reingresar stock al inventario
-            if (wasDelivered && targetStatus === 'CANCELADO') {
+            // 2. De Entregado a Cancelado: Reingresar stock al inventario (solo si fue descontado por ON_DELIVERY)
+            if (wasDelivered && targetStatus === 'CANCELADO' && deductionMode === 'ON_DELIVERY') {
                 for (const detail of (currentOrder.details || [])) {
                     await this.stockMovementUseCase.registerMovement({
                         cmp_uuid,
