@@ -325,6 +325,19 @@ export class OrderUseCase {
                 }
             }
 
+            // 2.1 Reversión de cuenta corriente: Si estaba en CUENTA_CORRIENTE y se cancela, asentar crédito
+            if (currentStatus === 'CUENTA_CORRIENTE' && targetStatus === 'CANCELADO' && this.customerMovementUseCase) {
+                await this.customerMovementUseCase.registerMovement({
+                    cmp_uuid,
+                    cus_uuid: currentOrder.cus_uuid,
+                    usr_uuid: currentOrder.usr_uuid_driver || currentOrder.usr_uuid_seller,
+                    cusm_type: 'CANCEL_CREDIT',
+                    cusm_amount: Number(currentOrder.ord_totalamount),
+                    ord_uuid,
+                    cusm_notes: `Crédito por cancelación de pedido en Cta. Cte. #${ord_uuid}`
+                }, { transaction });
+            }
+
             // Si se suministran nuevos detalles y no estaba entregado, recalcular importes
             let newDetails: OrderDetailEntity[] | undefined = undefined;
             let newTotalAmount = currentOrder.ord_totalamount;
