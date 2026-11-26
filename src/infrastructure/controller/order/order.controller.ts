@@ -169,9 +169,13 @@ export class OrderController {
                 });
             }
 
+            const user = (req as any).user;
+            const usr_uuid_operator = user?.sub || user?.usr_uuid;
+
             const updated = await this.orderUseCase.updateOrder(cmp_uuid, ord_uuid, {
                 cus_uuid,
                 usr_uuid_driver,
+                usr_uuid_operator,
                 ord_deliverydate,
                 ord_status,
                 ord_notes,
