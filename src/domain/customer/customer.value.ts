@@ -14,6 +14,7 @@ export class CustomerValue implements CustomerEntity {
     cus_lat: number | null;
     cus_lng: number | null;
     cus_hascredit: boolean;
+    cus_currentbalance: number;
     cus_active: boolean;
     cus_createdat: Date;
     cus_updatedat: Date;
@@ -30,6 +31,7 @@ export class CustomerValue implements CustomerEntity {
         cus_lat = null,
         cus_lng = null,
         cus_hascredit = false,
+        cus_currentbalance = 0,
         cus_active = true
     }: CustomerCreateInput & { prct_uuid: string }) {
         this.cmp_uuid = cmp_uuid;
@@ -43,6 +45,7 @@ export class CustomerValue implements CustomerEntity {
         this.cus_lat = cus_lat !== undefined && cus_lat !== null ? Number(cus_lat) : null;
         this.cus_lng = cus_lng !== undefined && cus_lng !== null ? Number(cus_lng) : null;
         this.cus_hascredit = Boolean(cus_hascredit);
+        this.cus_currentbalance = Number(cus_currentbalance) || 0;
         this.cus_active = cus_active !== undefined ? Boolean(cus_active) : true;
         this.cus_createdat = moment().toDate();
         this.cus_updatedat = moment().toDate();
