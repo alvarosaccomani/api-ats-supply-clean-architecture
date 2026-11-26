@@ -16,6 +16,7 @@ export class SequelizeCustomer extends Model<CustomerEntity, Partial<CustomerEnt
   declare cus_lat: number | null;
   declare cus_lng: number | null;
   declare cus_hascredit: boolean;
+  declare cus_currentbalance: number;
   declare cus_active: boolean;
   declare cus_createdat: Date;
   declare cus_updatedat: Date;
@@ -67,6 +68,11 @@ SequelizeCustomer.init({
   cus_hascredit: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
+    allowNull: false
+  },
+  cus_currentbalance: {
+    type: DataTypes.DECIMAL(14, 2),
+    defaultValue: 0.00,
     allowNull: false
   },
   cus_active: {
