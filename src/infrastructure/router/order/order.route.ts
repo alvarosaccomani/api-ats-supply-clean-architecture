@@ -66,6 +66,17 @@ function configureOrderRoutes(app: Express, socketAdapter?: SocketAdapter) {
 
     /**
      * @swagger
+     * /api/orders/assign-driver:
+     *   put:
+     *     summary: Asignar chofer a uno o varios pedidos
+     *     tags: [Orders]
+     *     security:
+     *       - bearerAuth: []
+     */
+    app.put(`/${basePrefix}/orders/assign-driver`, authMiddleware, tenantMiddleware, controller.assignDriverCtrl);
+
+    /**
+     * @swagger
      * /api/order/{cmp_uuid}/{ord_uuid}:
      *   put:
      *     summary: Actualizar datos, estado o ítems de un pedido
