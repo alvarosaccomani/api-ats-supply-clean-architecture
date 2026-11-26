@@ -49,6 +49,17 @@ function configureStockMovementRoutes(app: Express, socketAdapter?: SocketAdapte
 
     /**
      * @swagger
+     * /api/delivery/dispatch-status/{cmp_uuid}:
+     *   get:
+     *     summary: Consultar estado actual de despacho de la camioneta (si está en reparto o cerrada)
+     *     tags: [Stock Movements]
+     *     security:
+     *       - bearerAuth: []
+     */
+    app.get(`/${basePrefix}/delivery/dispatch-status/:cmp_uuid`, authMiddleware, tenantMiddleware, controller.getDispatchStatusCtrl);
+
+    /**
+     * @swagger
      * /api/delivery/dispatch-load:
      *   post:
      *     summary: Despachar y registrar salida de stock de cámara por carga de camioneta

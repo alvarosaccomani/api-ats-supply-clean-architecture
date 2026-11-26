@@ -10,6 +10,7 @@ export class StockMovementController {
         this.insertCtrl = this.insertCtrl.bind(this);
         this.dispatchLoadCtrl = this.dispatchLoadCtrl.bind(this);
         this.reconcileReturnCtrl = this.reconcileReturnCtrl.bind(this);
+        this.getDispatchStatusCtrl = this.getDispatchStatusCtrl.bind(this);
     }
 
     public async getAllCtrl(req: Request, res: Response) {
@@ -149,6 +150,32 @@ export class StockMovementController {
         }
     }
 
+    public async getDispatchStatusCtrl(req: Request, res: Response) {
+        try {
+            const cmp_uuid = (req.params.cmp_uuid || (req as any).tenant?.cmp_uuid) as string;
+            if (!cmp_uuid) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Debe proporcionar cmp_uuid."
+                });
+            }
+
+            const status = await this.stockMovementUseCase.getDispatchStatus(cmp_uuid);
+            return res.status(200).json({
+                success: true,
+                message: "Estado de despacho obtenido.",
+                data: status
+            });
+        } catch (error: any) {
+            console.error("Error en getDispatchStatusCtrl:", error.message);
+            return res.status(500).json({
+                success: false,
+                message: "Error al consultar estado de despacho.",
+                error: error.message
+            });
+        }
+    }
+
     public async dispatchLoadCtrl(req: Request, res: Response) {
         try {
             const cmp_uuid = (req.body.cmp_uuid || (req as any).tenant?.cmp_uuid) as string;
@@ -161,6 +188,15 @@ export class StockMovementController {
                 return res.status(400).json({
                     success: false,
                     message: "Debe proporcionar cmp_uuid."
+                });
+            }
+
+            // Validar si la camioneta ya fue despachada
+            const currentStatus = await this.stockMovementUseCase.getDispatchStatus(cmp_uuid);
+            if (currentStatus.isDispatched) {
+                return res.status(400).json({
+                    success: false,
+                    message: "La camioneta ya se encuentra despachada. Debe cerrar el reparto actual antes de realizar un nuevo despacho."
                 });
             }
 
@@ -216,16 +252,12 @@ export class StockMovementController {
                 });
             }
 
-            if (!items || !Array.isArray(items) || items.length === 0) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Debe incluir los productos y cantidades a reingresar a la cámara."
-                });
-            }
+            const rawItems = Array.isArray(items) ? items : [];
+            const itemsWithQty = rawItems.filter(i => Number(i.quantity) > 0);
 
             const results = [];
-            for (const item of items) {
-                if (Number(item.quantity) > 0) {
+            if (itemsWithQty.length > 0) {
+                for (const item of itemsWithQty) {
                     const m = await this.stockMovementUseCase.registerMovement({
                         cmp_uuid,
                         prd_uuid: item.prd_uuid,
@@ -236,11 +268,28 @@ export class StockMovementController {
                     });
                     results.push(m);
                 }
+            } else {
+                // Si no hay sobrante (100% entregado), registramos el cierre de reparto sin modificar stock (+0)
+                const currentStatus = await this.stockMovementUseCase.getDispatchStatus(cmp_uuid);
+                if (currentStatus.isDispatched) {
+                    const lastTruckMovement = await (this.stockMovementUseCase as any).stockMovementRepository.getLatestTruckMovement(cmp_uuid);
+                    if (lastTruckMovement) {
+                        const m = await this.stockMovementUseCase.registerMovement({
+                            cmp_uuid,
+                            prd_uuid: lastTruckMovement.prd_uuid,
+                            usr_uuid,
+                            stkm_type: 'TRUCK_RETURN_IN',
+                            stkm_quantity: 0,
+                            stkm_notes: notes || 'Cierre de reparto sin mercadería sobrante (100% entregado)'
+                        });
+                        results.push(m);
+                    }
+                }
             }
 
             return res.status(201).json({
                 success: true,
-                message: "Mercadería no entregada reingresada a la cámara con éxito.",
+                message: "Reparto cerrado y mercadería conciliada en cámara con éxito.",
                 data: results
             });
         } catch (error: any) {

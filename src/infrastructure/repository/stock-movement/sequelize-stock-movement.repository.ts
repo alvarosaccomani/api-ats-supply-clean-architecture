@@ -4,6 +4,7 @@ import { SequelizeStockMovement } from "../../model/stock-movement/stock-movemen
 import { SequelizeProduct } from "../../model/product/product.model";
 import { SequelizeUser } from "../../model/user/user.model";
 import { QueryOptions } from "../../../domain/common";
+import { Op } from "sequelize";
 
 export class SequelizeStockMovementRepository implements StockMovementRepository {
     async getMovements(cmp_uuid: string, options?: QueryOptions): Promise<StockMovementEntity[] | null> {
@@ -111,6 +112,26 @@ export class SequelizeStockMovementRepository implements StockMovementRepository
             return movement.get({ plain: true }) as StockMovementEntity;
         } catch (error: any) {
             console.error("Error en getLastMovementByProduct (repository):", error.message);
+            throw error;
+        }
+    }
+
+    async getLatestTruckMovement(cmp_uuid: string, options?: QueryOptions): Promise<StockMovementEntity | null> {
+        try {
+            const movement = await SequelizeStockMovement.findOne({
+                where: {
+                    cmp_uuid,
+                    stkm_type: { [Op.in]: ['TRUCK_LOAD_OUT', 'TRUCK_RETURN_IN'] }
+                },
+                order: [['stkm_createdat', 'DESC']],
+                transaction: options?.transaction
+            });
+            if (!movement) {
+                return null;
+            }
+            return movement.get({ plain: true }) as StockMovementEntity;
+        } catch (error: any) {
+            console.error("Error en getLatestTruckMovement (repository):", error.message);
             throw error;
         }
     }

@@ -24,6 +24,7 @@ export class StockMovementUseCase {
         this.getMovementsAndCount = this.getMovementsAndCount.bind(this);
         this.getDetailMovement = this.getDetailMovement.bind(this);
         this.registerMovement = this.registerMovement.bind(this);
+        this.getDispatchStatus = this.getDispatchStatus.bind(this);
     }
 
     private formatMovement(movement: StockMovementEntity) {
@@ -115,7 +116,7 @@ export class StockMovementUseCase {
             }
 
             const qty = Number(stkm_quantity);
-            if (isNaN(qty) || qty === 0) {
+            if (isNaN(qty) || (qty === 0 && stkm_type !== 'TRUCK_RETURN_IN')) {
                 throw new Error("La cantidad del movimiento debe ser un número diferente de cero.");
             }
 
@@ -163,6 +164,34 @@ export class StockMovementUseCase {
             });
         } catch (error: any) {
             console.error("Error en registerMovement (use case):", error.message);
+            throw error;
+        }
+    }
+
+    public async getDispatchStatus(cmp_uuid: string) {
+        try {
+            if (!cmp_uuid) {
+                throw new Error("Debe proporcionar cmp_uuid.");
+            }
+            const lastMovement = await this.stockMovementRepository.getLatestTruckMovement(cmp_uuid);
+            if (!lastMovement) {
+                return {
+                    isDispatched: false,
+                    lastMovementType: null,
+                    dispatchedAt: null
+                };
+            }
+
+            const isDispatched = lastMovement.stkm_type === 'TRUCK_LOAD_OUT';
+            return {
+                isDispatched,
+                lastMovementType: lastMovement.stkm_type,
+                dispatchedAt: isDispatched
+                    ? TimezoneConverter.toIsoStringInTimezone(lastMovement.stkm_createdat, 'America/Buenos_Aires')
+                    : null
+            };
+        } catch (error: any) {
+            console.error("Error en getDispatchStatus (use case):", error.message);
             throw error;
         }
     }
