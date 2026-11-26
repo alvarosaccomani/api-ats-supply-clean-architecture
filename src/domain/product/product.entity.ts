@@ -1,3 +1,5 @@
+import { ProductPriceEntity } from "./product-price.entity";
+
 export type ProductType = 'FINISHED' | 'SUPPLY';
 
 export interface ProductEntity {
@@ -13,6 +15,7 @@ export interface ProductEntity {
     prd_active: boolean;
     prd_createdat: Date;
     prd_updatedat: Date;
+    prices?: ProductPriceEntity[];
 }
 
 export interface ProductCreateInput {
