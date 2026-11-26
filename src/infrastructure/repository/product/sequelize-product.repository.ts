@@ -31,7 +31,7 @@ export class SequelizeProductRepository implements ProductRepository {
             if (!products) {
                 return null;
             }
-            return products.map(p => p.get({ plain: true }) as ProductEntity);
+            return products.map(p => this.sortProductPrices(p.get({ plain: true }) as ProductEntity));
         } catch (error: any) {
             console.error("Error en getProducts (repository):", error.message);
             throw error;
@@ -61,7 +61,7 @@ export class SequelizeProductRepository implements ProductRepository {
 
             return {
                 count,
-                rows: rows.map(p => p.get({ plain: true }) as ProductEntity)
+                rows: rows.map(p => this.sortProductPrices(p.get({ plain: true }) as ProductEntity))
             };
         } catch (error: any) {
             console.error("Error en getProductsAndCount (repository):", error.message);
@@ -83,11 +83,22 @@ export class SequelizeProductRepository implements ProductRepository {
             if (!product) {
                 return null;
             }
-            return product.get({ plain: true }) as ProductEntity;
+            return this.sortProductPrices(product.get({ plain: true }) as ProductEntity);
         } catch (error: any) {
             console.error("Error en findProductById (repository):", error.message);
             throw error;
         }
+    }
+
+    private sortProductPrices(product: ProductEntity): ProductEntity {
+        if (product.prices && Array.isArray(product.prices)) {
+            product.prices.sort((a: ProductPriceEntity, b: ProductPriceEntity) => {
+                const codeA = (a.priceTier?.prct_code || a.priceTier?.prct_name || '').toUpperCase();
+                const codeB = (b.priceTier?.prct_code || b.priceTier?.prct_name || '').toUpperCase();
+                return codeA.localeCompare(codeB, 'es', { numeric: true });
+            });
+        }
+        return product;
     }
 
     async findProductByCode(cmp_uuid: string, prd_code: string, excludeUuid?: string | null, options?: QueryOptions): Promise<ProductEntity | null> {
