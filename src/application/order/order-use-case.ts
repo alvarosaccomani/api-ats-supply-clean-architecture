@@ -41,6 +41,7 @@ export class OrderUseCase {
             ord_deliverydate: order.ord_deliverydate ? TimezoneConverter.toIsoStringInTimezone(order.ord_deliverydate, 'America/Buenos_Aires') : null,
             ord_status: order.ord_status,
             ord_totalamount: Number(order.ord_totalamount),
+            ord_paidamount: Number(order.ord_paidamount) || 0,
             ord_notes: order.ord_notes ?? null,
             ord_createdat: order.ord_createdat ? TimezoneConverter.toIsoStringInTimezone(order.ord_createdat, 'America/Buenos_Aires') : null,
             ord_updatedat: order.ord_updatedat ? TimezoneConverter.toIsoStringInTimezone(order.ord_updatedat, 'America/Buenos_Aires') : null,
@@ -280,16 +281,25 @@ export class OrderUseCase {
                 if (createdOrder.ord_status === 'CUENTA_CORRIENTE' && advanceAvailable > 0) {
                     if (advanceAvailable >= orderTotal) {
                         const remainingAdvance = Number((advanceAvailable - orderTotal).toFixed(2));
+                        await this.orderRepository.updateOrder(cmp_uuid, createdOrder.ord_uuid, {
+                            ord_status: 'PAGADO',
+                            ord_paidamount: orderTotal
+                        }, { transaction });
+
                         await this.orderHistoryUseCase.recordTransition({
                             cmp_uuid,
                             ord_uuid: createdOrder.ord_uuid,
                             usr_uuid: usr_uuid_seller,
                             ordh_previousstatus: 'CUENTA_CORRIENTE',
-                            ordh_newstatus: 'CUENTA_CORRIENTE',
+                            ordh_newstatus: 'PAGADO',
                             ordh_notes: `Orden cubierta al 100% con saldo a favor anticipado en Cta. Cte. ($${orderTotal}). Saldo a favor remanente: $${remainingAdvance}`
                         }, { transaction });
                     } else {
                         const remainingDebt = Number((orderTotal - advanceAvailable).toFixed(2));
+                        await this.orderRepository.updateOrder(cmp_uuid, createdOrder.ord_uuid, {
+                            ord_paidamount: advanceAvailable
+                        }, { transaction });
+
                         await this.orderHistoryUseCase.recordTransition({
                             cmp_uuid,
                             ord_uuid: createdOrder.ord_uuid,
@@ -332,7 +342,7 @@ export class OrderUseCase {
             }
 
             const currentStatus = currentOrder.ord_status;
-            const targetStatus = data.ord_status || currentStatus;
+            let targetStatus = data.ord_status || currentStatus;
 
             // Manejo de transiciones de stock
             const deductionMode = await this.getStockDeductionMode(cmp_uuid, { transaction });
@@ -464,12 +474,13 @@ export class OrderUseCase {
                 if (currentStatus !== 'CUENTA_CORRIENTE' && targetStatus === 'CUENTA_CORRIENTE' && advanceAvailable > 0) {
                     if (advanceAvailable >= orderTotal) {
                         const remainingAdvance = Number((advanceAvailable - orderTotal).toFixed(2));
+                        targetStatus = 'PAGADO';
                         await this.orderHistoryUseCase.recordTransition({
                             cmp_uuid,
                             ord_uuid,
                             usr_uuid: operatorUuid,
                             ordh_previousstatus: 'CUENTA_CORRIENTE',
-                            ordh_newstatus: 'CUENTA_CORRIENTE',
+                            ordh_newstatus: 'PAGADO',
                             ordh_notes: `Orden cubierta al 100% con saldo a favor anticipado en Cta. Cte. ($${orderTotal}). Saldo a favor remanente: $${remainingAdvance}`
                         }, { transaction });
                     } else {
@@ -486,12 +497,20 @@ export class OrderUseCase {
                 }
             }
 
+            let effectivePaidAmount = Number(currentOrder.ord_paidamount) || 0;
+            if (targetStatus === 'PAGADO') {
+                effectivePaidAmount = Number(newTotalAmount);
+            } else if (currentStatus !== 'CUENTA_CORRIENTE' && targetStatus === 'CUENTA_CORRIENTE' && advanceAvailable > 0) {
+                effectivePaidAmount = advanceAvailable;
+            }
+
             const updatePayload: Partial<OrderEntity> = {
                 cus_uuid: data.cus_uuid,
                 usr_uuid_driver: data.usr_uuid_driver,
                 ord_deliverydate: data.ord_deliverydate ? new Date(data.ord_deliverydate) : undefined,
                 ord_status: targetStatus,
                 ord_totalamount: newTotalAmount,
+                ord_paidamount: effectivePaidAmount,
                 ord_notes: data.ord_notes !== undefined ? (data.ord_notes ? data.ord_notes.trim() : null) : undefined,
                 details: newDetails
             };
