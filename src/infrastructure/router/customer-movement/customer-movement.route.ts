@@ -1,6 +1,9 @@
 import { Express } from "express";
 import { SequelizeCustomerMovementRepository } from "../../repository/customer-movement/sequelize-customer-movement.repository";
 import { SequelizeCustomerRepository } from "../../repository/customer/sequelize-customer.repository";
+import { SequelizeOrderRepository } from "../../repository/order/sequelize-order.repository";
+import { SequelizeOrderHistoryRepository } from "../../repository/order-history/sequelize-order-history.repository";
+import { OrderHistoryUseCase } from "../../../application/order-history/order-history-use-case";
 import { CustomerMovementUseCase } from "../../../application/customer-movement/customer-movement-use-case";
 import { CustomerMovementController } from "../../controller/customer-movement/customer-movement.controller";
 import { authMiddleware, tenantMiddleware } from "../../middlewares";
@@ -9,7 +12,10 @@ import SocketAdapter from "../../services/socketAdapter";
 function configureCustomerMovementRoutes(app: Express, socketAdapter?: SocketAdapter) {
     const customerMovementRepository = new SequelizeCustomerMovementRepository();
     const customerRepository = new SequelizeCustomerRepository();
-    const useCase = new CustomerMovementUseCase(customerMovementRepository, customerRepository);
+    const orderRepository = new SequelizeOrderRepository();
+    const orderHistoryRepository = new SequelizeOrderHistoryRepository();
+    const orderHistoryUseCase = new OrderHistoryUseCase(orderHistoryRepository);
+    const useCase = new CustomerMovementUseCase(customerMovementRepository, customerRepository, orderRepository, orderHistoryUseCase);
     const controller = new CustomerMovementController(useCase);
 
     const basePrefix = process.env.BASE_URL_API || 'api';
