@@ -9,6 +9,7 @@ export class DbErrorHandler {
         'cmp_companies': { name: 'empresas', gender: 'f' },
         'cmpitm_companyitems': { name: 'rubros de empresa', gender: 'm' },
         'cus_customers': { name: 'clientes', gender: 'm' },
+        'cusm_customermovements': { name: 'movimientos de cuenta corriente', gender: 'm' },
         'dmitm_detailsmodelsitems': { name: 'detalle de rubros de modelos', gender: 'm' },
         'dtp_datatypes': { name: 'tipos de datos', gender: 'm' },
         'gdmitm_groupdetailsmodelsitems': { name: 'detalle de rubros de grupos', gender: 'm' },
