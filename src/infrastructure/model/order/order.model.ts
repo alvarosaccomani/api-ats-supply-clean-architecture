@@ -16,6 +16,7 @@ export class SequelizeOrder extends Model<OrderEntity, Partial<OrderEntity>> imp
   declare ord_deliverydate: Date | null;
   declare ord_status: OrderStatus;
   declare ord_totalamount: number;
+  declare ord_paidamount: number;
   declare ord_notes: string | null;
   declare ord_createdat: Date;
   declare ord_updatedat: Date;
@@ -59,6 +60,11 @@ SequelizeOrder.init({
     allowNull: false
   },
   ord_totalamount: {
+    type: DataTypes.FLOAT,
+    defaultValue: 0,
+    allowNull: false
+  },
+  ord_paidamount: {
     type: DataTypes.FLOAT,
     defaultValue: 0,
     allowNull: false
