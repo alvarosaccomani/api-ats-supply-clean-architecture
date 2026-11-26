@@ -12,6 +12,7 @@ export class OrderValue implements OrderEntity {
     ord_deliverydate?: Date | null;
     ord_status: OrderStatus;
     ord_totalamount: number;
+    ord_paidamount?: number;
     ord_notes?: string | null;
     ord_createdat?: Date;
     ord_updatedat?: Date;
@@ -51,5 +52,7 @@ export class OrderValue implements OrderEntity {
             }));
             this.ord_totalamount = this.details.reduce((sum, item) => sum + item.ordd_subtotal, 0);
         }
+
+        this.ord_paidamount = (data as any).ord_paidamount !== undefined ? Number((data as any).ord_paidamount) : (this.ord_status === 'PAGADO' ? this.ord_totalamount : 0);
     }
 }
