@@ -55,7 +55,7 @@ export const tenantMiddleware = async (req: Request, res: Response, next: NextFu
                 include: [{
                     model: SequelizeRol,
                     as: 'rol',
-                    where: { rol_name: ['superadmin', 'sysadmin', 'root', 'admin'] }
+                    where: { rol_name: ['superadmin', 'sysadmin', 'root', 'admin', 'SYSADMIN', 'SUPERADMIN', 'ADMIN'] }
                 }]
             });
 
