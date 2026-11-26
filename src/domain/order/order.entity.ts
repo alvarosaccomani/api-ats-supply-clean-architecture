@@ -13,6 +13,7 @@ export interface OrderEntity {
     ord_deliverydate?: Date | null;
     ord_status: OrderStatus;
     ord_totalamount: number;
+    ord_paidamount?: number;
     ord_notes?: string | null;
     ord_createdat?: Date;
     ord_updatedat?: Date;
@@ -43,6 +44,7 @@ export interface OrderCreateInput {
     ord_orderdate?: Date | string;
     ord_deliverydate?: Date | string | null;
     ord_status?: OrderStatus;
+    ord_paidamount?: number;
     ord_notes?: string | null;
     details: OrderDetailCreateInput[];
 }
@@ -53,6 +55,7 @@ export interface OrderUpdateData {
     usr_uuid_operator?: string | null;
     ord_deliverydate?: Date | string | null;
     ord_status?: OrderStatus;
+    ord_paidamount?: number;
     ord_notes?: string | null;
     details?: OrderDetailCreateInput[];
 }
