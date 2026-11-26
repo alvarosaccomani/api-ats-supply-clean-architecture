@@ -6,6 +6,7 @@ import { CustomerRepository } from "../../domain/customer/customer.repository";
 import { ProductRepository } from "../../domain/product/product.repository";
 import { CompanySettingRepository } from "../../domain/company-setting/company-setting.repository";
 import { StockMovementUseCase } from "../stock-movement/stock-movement-use-case";
+import { CustomerMovementUseCase } from "../customer-movement/customer-movement-use-case";
 import { QueryOptions } from "../../domain/common";
 import { TimezoneConverter } from "../../infrastructure/utils/TimezoneConverter";
 import { sequelize } from "../../infrastructure/db/sequelize";
@@ -16,7 +17,8 @@ export class OrderUseCase {
         private readonly customerRepository: CustomerRepository,
         private readonly productRepository: ProductRepository,
         private readonly stockMovementUseCase: StockMovementUseCase,
-        private readonly companySettingRepository?: CompanySettingRepository
+        private readonly companySettingRepository?: CompanySettingRepository,
+        private readonly customerMovementUseCase?: CustomerMovementUseCase
     ) {
         this.getOrders = this.getOrders.bind(this);
         this.getOrdersAndCount = this.getOrdersAndCount.bind(this);
@@ -242,6 +244,19 @@ export class OrderUseCase {
                 }
             }
 
+            // Si el pedido nace en CUENTA_CORRIENTE, asentar débito en cuenta corriente
+            if (createdOrder.ord_status === 'CUENTA_CORRIENTE' && this.customerMovementUseCase) {
+                await this.customerMovementUseCase.registerMovement({
+                    cmp_uuid,
+                    cus_uuid: createdOrder.cus_uuid,
+                    usr_uuid: usr_uuid_seller,
+                    cusm_type: 'ORDER_DEBIT',
+                    cusm_amount: Number(createdOrder.ord_totalamount),
+                    ord_uuid: createdOrder.ord_uuid,
+                    cusm_notes: `Débito en Cta. Cte. por alta de pedido #${createdOrder.ord_uuid}`
+                }, { transaction });
+            }
+
             if (shouldCommit) {
                 await transaction.commit();
             }
@@ -353,6 +368,19 @@ export class OrderUseCase {
                     });
                 }
                 newTotalAmount = newDetails.reduce((sum, d) => sum + d.ordd_subtotal, 0);
+            }
+
+            // 3. Manejo de cuenta corriente: Si transiciona a CUENTA_CORRIENTE, asentar débito
+            if (currentStatus !== 'CUENTA_CORRIENTE' && targetStatus === 'CUENTA_CORRIENTE' && this.customerMovementUseCase) {
+                await this.customerMovementUseCase.registerMovement({
+                    cmp_uuid,
+                    cus_uuid: currentOrder.cus_uuid,
+                    usr_uuid: currentOrder.usr_uuid_driver || currentOrder.usr_uuid_seller,
+                    cusm_type: 'ORDER_DEBIT',
+                    cusm_amount: Number(newTotalAmount),
+                    ord_uuid,
+                    cusm_notes: `Débito en Cta. Cte. por entrega de pedido #${ord_uuid}`
+                }, { transaction });
             }
 
             const updatePayload: Partial<OrderEntity> = {
