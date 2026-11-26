@@ -153,6 +153,7 @@ export class StockMovementController {
     public async getDispatchStatusCtrl(req: Request, res: Response) {
         try {
             const cmp_uuid = (req.params.cmp_uuid || (req as any).tenant?.cmp_uuid) as string;
+            const driver_uuid = (req.query.driver_uuid || req.params.driver_uuid) as string | undefined;
             if (!cmp_uuid) {
                 return res.status(400).json({
                     success: false,
@@ -160,7 +161,7 @@ export class StockMovementController {
                 });
             }
 
-            const status = await this.stockMovementUseCase.getDispatchStatus(cmp_uuid);
+            const status = await this.stockMovementUseCase.getDispatchStatus(cmp_uuid, driver_uuid);
             return res.status(200).json({
                 success: true,
                 message: "Estado de despacho obtenido.",
@@ -181,6 +182,7 @@ export class StockMovementController {
             const cmp_uuid = (req.body.cmp_uuid || (req as any).tenant?.cmp_uuid) as string;
             const user = (req as any).user;
             const usr_uuid = user?.sub || user?.usr_uuid;
+            const driver_uuid = req.body.driver_uuid as string | undefined;
             const items = req.body.items as { prd_uuid: string; quantity: number }[];
             const notes = req.body.notes || 'Carga y despacho de camioneta para reparto';
 
@@ -191,8 +193,8 @@ export class StockMovementController {
                 });
             }
 
-            // Validar si la camioneta ya fue despachada
-            const currentStatus = await this.stockMovementUseCase.getDispatchStatus(cmp_uuid);
+            // Validar si la camioneta ya fue despachada para este chofer
+            const currentStatus = await this.stockMovementUseCase.getDispatchStatus(cmp_uuid, driver_uuid);
             if (currentStatus.isDispatched) {
                 return res.status(400).json({
                     success: false,
@@ -216,6 +218,7 @@ export class StockMovementController {
                         usr_uuid,
                         stkm_type: 'TRUCK_LOAD_OUT',
                         stkm_quantity: Number(item.quantity),
+                        stkm_referenceuuid: driver_uuid || null,
                         stkm_notes: notes
                     });
                     results.push(m);
@@ -242,6 +245,7 @@ export class StockMovementController {
             const cmp_uuid = (req.body.cmp_uuid || (req as any).tenant?.cmp_uuid) as string;
             const user = (req as any).user;
             const usr_uuid = user?.sub || user?.usr_uuid;
+            const driver_uuid = req.body.driver_uuid as string | undefined;
             const items = req.body.items as { prd_uuid: string; quantity: number }[];
             const notes = req.body.notes || 'Reingreso de sobrante por regreso de camioneta';
 
@@ -264,15 +268,16 @@ export class StockMovementController {
                         usr_uuid,
                         stkm_type: 'TRUCK_RETURN_IN',
                         stkm_quantity: Number(item.quantity),
+                        stkm_referenceuuid: driver_uuid || null,
                         stkm_notes: notes
                     });
                     results.push(m);
                 }
             } else {
                 // Si no hay sobrante (100% entregado), registramos el cierre de reparto sin modificar stock (+0)
-                const currentStatus = await this.stockMovementUseCase.getDispatchStatus(cmp_uuid);
+                const currentStatus = await this.stockMovementUseCase.getDispatchStatus(cmp_uuid, driver_uuid);
                 if (currentStatus.isDispatched) {
-                    const lastTruckMovement = await (this.stockMovementUseCase as any).stockMovementRepository.getLatestTruckMovement(cmp_uuid);
+                    const lastTruckMovement = await (this.stockMovementUseCase as any).stockMovementRepository.getLatestTruckMovement(cmp_uuid, undefined, driver_uuid);
                     if (lastTruckMovement) {
                         const m = await this.stockMovementUseCase.registerMovement({
                             cmp_uuid,
@@ -280,6 +285,7 @@ export class StockMovementController {
                             usr_uuid,
                             stkm_type: 'TRUCK_RETURN_IN',
                             stkm_quantity: 0,
+                            stkm_referenceuuid: driver_uuid || null,
                             stkm_notes: notes || 'Cierre de reparto sin mercadería sobrante (100% entregado)'
                         });
                         results.push(m);
