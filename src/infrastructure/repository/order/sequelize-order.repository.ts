@@ -116,6 +116,24 @@ export class SequelizeOrderRepository implements OrderRepository {
         }
     }
 
+    async getCreditOrdersByCustomer(cmp_uuid: string, cus_uuid: string, options?: QueryOptions): Promise<OrderEntity[]> {
+        try {
+            const orders = await SequelizeOrder.findAll({
+                where: {
+                    cmp_uuid,
+                    cus_uuid,
+                    ord_status: 'CUENTA_CORRIENTE'
+                },
+                order: [['ord_createdat', 'ASC']],
+                transaction: options?.transaction
+            });
+            return orders.map(o => o.get({ plain: true }) as OrderEntity);
+        } catch (error: any) {
+            console.error("Error en getCreditOrdersByCustomer (repository):", error.message);
+            throw error;
+        }
+    }
+
     async createOrder(order: OrderEntity, options?: QueryOptions): Promise<OrderEntity | null> {
         try {
             const created = await SequelizeOrder.create(order as any, { transaction: options?.transaction });
