@@ -50,6 +50,7 @@ export class OrderUseCase {
                 cus_lat: order.customer.cus_lat !== undefined && order.customer.cus_lat !== null ? Number(order.customer.cus_lat) : null,
                 cus_lng: order.customer.cus_lng !== undefined && order.customer.cus_lng !== null ? Number(order.customer.cus_lng) : null,
                 cus_hascredit: Boolean(order.customer.cus_hascredit),
+                cus_currentbalance: Number(order.customer.cus_currentbalance) || 0,
                 prct_uuid: order.customer.prct_uuid
             } : undefined,
             seller: order.seller ? {
