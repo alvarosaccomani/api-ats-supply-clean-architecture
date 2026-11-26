@@ -168,12 +168,12 @@ export class StockMovementUseCase {
         }
     }
 
-    public async getDispatchStatus(cmp_uuid: string) {
+    public async getDispatchStatus(cmp_uuid: string, driver_uuid?: string) {
         try {
             if (!cmp_uuid) {
                 throw new Error("Debe proporcionar cmp_uuid.");
             }
-            const lastMovement = await this.stockMovementRepository.getLatestTruckMovement(cmp_uuid);
+            const lastMovement = await this.stockMovementRepository.getLatestTruckMovement(cmp_uuid, undefined, driver_uuid);
             if (!lastMovement) {
                 return {
                     isDispatched: false,
