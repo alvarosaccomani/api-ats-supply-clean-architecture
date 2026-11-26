@@ -50,6 +50,7 @@ export interface OrderCreateInput {
 export interface OrderUpdateData {
     cus_uuid?: string;
     usr_uuid_driver?: string | null;
+    usr_uuid_operator?: string | null;
     ord_deliverydate?: Date | string | null;
     ord_status?: OrderStatus;
     ord_notes?: string | null;
