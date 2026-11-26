@@ -114,6 +114,24 @@ export class SequelizeCustomerRepository implements CustomerRepository {
         }
     }
 
+    async updateCustomerBalance(cmp_uuid: string, cus_uuid: string, newBalance: number, options?: QueryOptions): Promise<CustomerEntity | null> {
+        try {
+            const existing = await SequelizeCustomer.findOne({
+                where: { cmp_uuid, cus_uuid },
+                transaction: options?.transaction
+            });
+            if (!existing) {
+                return null;
+            }
+
+            await existing.update({ cus_currentbalance: Number(newBalance) } as any, { transaction: options?.transaction });
+            return await this.findCustomerById(cmp_uuid, cus_uuid, options);
+        } catch (error: any) {
+            console.error("Error en updateCustomerBalance (repository):", error.message);
+            throw error;
+        }
+    }
+
     async deleteCustomer(cmp_uuid: string, cus_uuid: string, options?: QueryOptions): Promise<CustomerEntity | null> {
         try {
             const existing = await this.findCustomerById(cmp_uuid, cus_uuid, options);
