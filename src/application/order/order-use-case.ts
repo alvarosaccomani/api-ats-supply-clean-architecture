@@ -248,13 +248,17 @@ export class OrderUseCase {
             }
 
             // Si el pedido nace en CUENTA_CORRIENTE, asentar débito en cuenta corriente
+            const previousBalance = Number(customer.cus_currentbalance) || 0.0;
+            const advanceAvailable = previousBalance < 0 ? Math.abs(previousBalance) : 0;
+            const orderTotal = Number(createdOrder.ord_totalamount);
+
             if (createdOrder.ord_status === 'CUENTA_CORRIENTE' && this.customerMovementUseCase) {
                 await this.customerMovementUseCase.registerMovement({
                     cmp_uuid,
                     cus_uuid: createdOrder.cus_uuid,
                     usr_uuid: usr_uuid_seller,
                     cusm_type: 'ORDER_DEBIT',
-                    cusm_amount: Number(createdOrder.ord_totalamount),
+                    cusm_amount: orderTotal,
                     ord_uuid: createdOrder.ord_uuid,
                     cusm_notes: `Débito en Cta. Cte. por alta de pedido #${createdOrder.ord_uuid}`
                 }, { transaction });
@@ -271,6 +275,31 @@ export class OrderUseCase {
                     ordh_notes: 'Alta inicial del pedido',
                     ordh_createdat: createdOrder.ord_createdat
                 }, { transaction });
+
+                // Si el pedido es en Cta. Cte. y el cliente poseía saldo a favor (anticipo), auditar cobertura
+                if (createdOrder.ord_status === 'CUENTA_CORRIENTE' && advanceAvailable > 0) {
+                    if (advanceAvailable >= orderTotal) {
+                        const remainingAdvance = Number((advanceAvailable - orderTotal).toFixed(2));
+                        await this.orderHistoryUseCase.recordTransition({
+                            cmp_uuid,
+                            ord_uuid: createdOrder.ord_uuid,
+                            usr_uuid: usr_uuid_seller,
+                            ordh_previousstatus: 'CUENTA_CORRIENTE',
+                            ordh_newstatus: 'CUENTA_CORRIENTE',
+                            ordh_notes: `Orden cubierta al 100% con saldo a favor anticipado en Cta. Cte. ($${orderTotal}). Saldo a favor remanente: $${remainingAdvance}`
+                        }, { transaction });
+                    } else {
+                        const remainingDebt = Number((orderTotal - advanceAvailable).toFixed(2));
+                        await this.orderHistoryUseCase.recordTransition({
+                            cmp_uuid,
+                            ord_uuid: createdOrder.ord_uuid,
+                            usr_uuid: usr_uuid_seller,
+                            ordh_previousstatus: 'CUENTA_CORRIENTE',
+                            ordh_newstatus: 'CUENTA_CORRIENTE',
+                            ordh_notes: `Cobertura parcial de $${advanceAvailable} sobre $${orderTotal} imputada desde saldo a favor anticipado en Cta. Cte. Saldo deudor restante: $${remainingDebt}`
+                        }, { transaction });
+                    }
+                }
             }
 
             if (shouldCommit) {
@@ -400,13 +429,20 @@ export class OrderUseCase {
             }
 
             // 3. Manejo de cuenta corriente: Si transiciona a CUENTA_CORRIENTE, asentar débito
+            let advanceAvailable = 0;
+            const orderTotal = Number(newTotalAmount);
+
             if (currentStatus !== 'CUENTA_CORRIENTE' && targetStatus === 'CUENTA_CORRIENTE' && this.customerMovementUseCase) {
+                const customer = await this.customerRepository.findCustomerById(cmp_uuid, currentOrder.cus_uuid, { transaction });
+                const previousBalance = Number(customer?.cus_currentbalance) || 0.0;
+                advanceAvailable = previousBalance < 0 ? Math.abs(previousBalance) : 0;
+
                 await this.customerMovementUseCase.registerMovement({
                     cmp_uuid,
                     cus_uuid: currentOrder.cus_uuid,
                     usr_uuid: currentOrder.usr_uuid_driver || currentOrder.usr_uuid_seller,
                     cusm_type: 'ORDER_DEBIT',
-                    cusm_amount: Number(newTotalAmount),
+                    cusm_amount: orderTotal,
                     ord_uuid,
                     cusm_notes: `Débito en Cta. Cte. por entrega de pedido #${ord_uuid}`
                 }, { transaction });
@@ -423,6 +459,31 @@ export class OrderUseCase {
                     ordh_newstatus: targetStatus,
                     ordh_notes: data.ord_notes || (targetStatus === 'CANCELADO' ? 'Cancelación de pedido' : (targetStatus === 'CUENTA_CORRIENTE' ? 'Entrega en Cuenta Corriente' : `Cambio de estado a ${targetStatus}`))
                 }, { transaction });
+
+                // Si transicionó a Cta. Cte. y el cliente disponía de saldo a favor (anticipo), auditar cobertura
+                if (currentStatus !== 'CUENTA_CORRIENTE' && targetStatus === 'CUENTA_CORRIENTE' && advanceAvailable > 0) {
+                    if (advanceAvailable >= orderTotal) {
+                        const remainingAdvance = Number((advanceAvailable - orderTotal).toFixed(2));
+                        await this.orderHistoryUseCase.recordTransition({
+                            cmp_uuid,
+                            ord_uuid,
+                            usr_uuid: operatorUuid,
+                            ordh_previousstatus: 'CUENTA_CORRIENTE',
+                            ordh_newstatus: 'CUENTA_CORRIENTE',
+                            ordh_notes: `Orden cubierta al 100% con saldo a favor anticipado en Cta. Cte. ($${orderTotal}). Saldo a favor remanente: $${remainingAdvance}`
+                        }, { transaction });
+                    } else {
+                        const remainingDebt = Number((orderTotal - advanceAvailable).toFixed(2));
+                        await this.orderHistoryUseCase.recordTransition({
+                            cmp_uuid,
+                            ord_uuid,
+                            usr_uuid: operatorUuid,
+                            ordh_previousstatus: 'CUENTA_CORRIENTE',
+                            ordh_newstatus: 'CUENTA_CORRIENTE',
+                            ordh_notes: `Cobertura parcial de $${advanceAvailable} sobre $${orderTotal} imputada desde saldo a favor anticipado en Cta. Cte. Saldo deudor restante: $${remainingDebt}`
+                        }, { transaction });
+                    }
+                }
             }
 
             const updatePayload: Partial<OrderEntity> = {
