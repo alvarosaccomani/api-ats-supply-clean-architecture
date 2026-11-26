@@ -8,6 +8,8 @@ export class StockMovementController {
         this.getAllCtrl = this.getAllCtrl.bind(this);
         this.getCtrl = this.getCtrl.bind(this);
         this.insertCtrl = this.insertCtrl.bind(this);
+        this.dispatchLoadCtrl = this.dispatchLoadCtrl.bind(this);
+        this.reconcileReturnCtrl = this.reconcileReturnCtrl.bind(this);
     }
 
     public async getAllCtrl(req: Request, res: Response) {
@@ -142,6 +144,110 @@ export class StockMovementController {
             return res.status(400).json({
                 success: false,
                 message: "No se pudo registrar el movimiento de stock.",
+                error: error.message
+            });
+        }
+    }
+
+    public async dispatchLoadCtrl(req: Request, res: Response) {
+        try {
+            const cmp_uuid = (req.body.cmp_uuid || (req as any).tenant?.cmp_uuid) as string;
+            const user = (req as any).user;
+            const usr_uuid = user?.sub || user?.usr_uuid;
+            const items = req.body.items as { prd_uuid: string; quantity: number }[];
+            const notes = req.body.notes || 'Carga y despacho de camioneta para reparto';
+
+            if (!cmp_uuid) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Debe proporcionar cmp_uuid."
+                });
+            }
+
+            if (!items || !Array.isArray(items) || items.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Debe incluir los productos y cantidades a cargar en la camioneta."
+                });
+            }
+
+            const results = [];
+            for (const item of items) {
+                if (Number(item.quantity) > 0) {
+                    const m = await this.stockMovementUseCase.registerMovement({
+                        cmp_uuid,
+                        prd_uuid: item.prd_uuid,
+                        usr_uuid,
+                        stkm_type: 'TRUCK_LOAD_OUT',
+                        stkm_quantity: Number(item.quantity),
+                        stkm_notes: notes
+                    });
+                    results.push(m);
+                }
+            }
+
+            return res.status(201).json({
+                success: true,
+                message: "Carga de camioneta despachada y stock descontado de cámara.",
+                data: results
+            });
+        } catch (error: any) {
+            console.error("Error en dispatchLoadCtrl:", error.message);
+            return res.status(400).json({
+                success: false,
+                message: "Error al registrar la carga de la camioneta.",
+                error: error.message
+            });
+        }
+    }
+
+    public async reconcileReturnCtrl(req: Request, res: Response) {
+        try {
+            const cmp_uuid = (req.body.cmp_uuid || (req as any).tenant?.cmp_uuid) as string;
+            const user = (req as any).user;
+            const usr_uuid = user?.sub || user?.usr_uuid;
+            const items = req.body.items as { prd_uuid: string; quantity: number }[];
+            const notes = req.body.notes || 'Reingreso de sobrante por regreso de camioneta';
+
+            if (!cmp_uuid) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Debe proporcionar cmp_uuid."
+                });
+            }
+
+            if (!items || !Array.isArray(items) || items.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Debe incluir los productos y cantidades a reingresar a la cámara."
+                });
+            }
+
+            const results = [];
+            for (const item of items) {
+                if (Number(item.quantity) > 0) {
+                    const m = await this.stockMovementUseCase.registerMovement({
+                        cmp_uuid,
+                        prd_uuid: item.prd_uuid,
+                        usr_uuid,
+                        stkm_type: 'TRUCK_RETURN_IN',
+                        stkm_quantity: Number(item.quantity),
+                        stkm_notes: notes
+                    });
+                    results.push(m);
+                }
+            }
+
+            return res.status(201).json({
+                success: true,
+                message: "Mercadería no entregada reingresada a la cámara con éxito.",
+                data: results
+            });
+        } catch (error: any) {
+            console.error("Error en reconcileReturnCtrl:", error.message);
+            return res.status(400).json({
+                success: false,
+                message: "Error al reingresar la mercadería a la cámara.",
                 error: error.message
             });
         }

@@ -46,6 +46,28 @@ function configureStockMovementRoutes(app: Express, socketAdapter?: SocketAdapte
      *       - bearerAuth: []
      */
     app.post(`/${basePrefix}/stock-movement`, authMiddleware, tenantMiddleware, controller.insertCtrl);
+
+    /**
+     * @swagger
+     * /api/delivery/dispatch-load:
+     *   post:
+     *     summary: Despachar y registrar salida de stock de cámara por carga de camioneta
+     *     tags: [Stock Movements]
+     *     security:
+     *       - bearerAuth: []
+     */
+    app.post(`/${basePrefix}/delivery/dispatch-load`, authMiddleware, tenantMiddleware, controller.dispatchLoadCtrl);
+
+    /**
+     * @swagger
+     * /api/delivery/reconcile-return:
+     *   post:
+     *     summary: Reingresar mercadería no entregada a la cámara al regreso del reparto
+     *     tags: [Stock Movements]
+     *     security:
+     *       - bearerAuth: []
+     */
+    app.post(`/${basePrefix}/delivery/reconcile-return`, authMiddleware, tenantMiddleware, controller.reconcileReturnCtrl);
 }
 
 export default configureStockMovementRoutes;
