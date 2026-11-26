@@ -7,5 +7,6 @@ export interface CustomerRepository {
     findCustomerById(cmp_uuid: string, cus_uuid: string, options?: QueryOptions): Promise<CustomerEntity | null>;
     createCustomer(customer: CustomerCreateInput & { prct_uuid: string }, options?: QueryOptions): Promise<CustomerEntity | null>;
     updateCustomer(cmp_uuid: string, cus_uuid: string, customer: CustomerUpdateData, options?: QueryOptions): Promise<CustomerEntity | null>;
+    updateCustomerBalance(cmp_uuid: string, cus_uuid: string, newBalance: number, options?: QueryOptions): Promise<CustomerEntity | null>;
     deleteCustomer(cmp_uuid: string, cus_uuid: string, options?: QueryOptions): Promise<CustomerEntity | null>;
 }
